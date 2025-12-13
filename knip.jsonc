@@ -1,0 +1,8 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["frontend/index.tsx", "server/index.ts"],
+  "exclude": ["exports", "types"],
+  "ignoreDependencies": [
+    "vscode-jsonrpc" // neeeded for streamdown https://github.com/vercel/streamdown/issues/182
+  ]
+}
