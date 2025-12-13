@@ -31,9 +31,9 @@ function isValidCellRange(input: string): boolean {
 
 const ExplanationSchema = z
   .string()
-  .max(25)
+  .max(50)
   .describe(
-    "A very brief description of the action (max 25 chars). Shown next to the tool icon.",
+    "A very brief description of the action (max 50 chars). Shown next to the tool icon.",
   );
 
 const BaseSpreadsheetObjectSchema = z.object({

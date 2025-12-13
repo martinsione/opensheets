@@ -52,6 +52,13 @@ import {
   SourcesContent,
   SourcesTrigger,
 } from "@/frontend/components/ai-elements/sources";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/frontend/components/ai-elements/tool";
 import type { SpreadsheetAgentUIMessage } from "@/server/ai/agent";
 import { writeTools } from "@/server/ai/tools";
 import * as spreadsheetService from "@/spreadsheet-service/excel";
@@ -256,8 +263,9 @@ export default function Chat() {
                         </Reasoning>
                       );
                     case "tool-bashCodeExecution":
-                    case "tool-clearCellRange":
                     case "tool-codeExecution":
+                    case "tool-webSearch":
+                    case "tool-clearCellRange":
                     case "tool-copyTo":
                     case "tool-getAllObjects":
                     case "tool-getCellRanges":
@@ -267,14 +275,29 @@ export default function Chat() {
                     case "tool-resizeRange":
                     case "tool-searchData":
                     case "tool-setCellRange":
-                    case "tool-webSearch":
                       return (
-                        <pre
-                          key={`${message.id}-${i}`}
-                          className="text-muted-foreground text-xs"
-                        >
-                          {JSON.stringify(part, null, 2)}
-                        </pre>
+                        <Tool key={`${message.id}-${i}`}>
+                          <ToolHeader
+                            state={part.state}
+                            type={part.type}
+                            title={
+                              part.type === "tool-bashCodeExecution"
+                                ? "Executing Bash Code"
+                                : part.type === "tool-codeExecution"
+                                  ? "Executing Code"
+                                  : part.type === "tool-webSearch"
+                                    ? "Searching the Web"
+                                    : part.input?.explanation
+                            }
+                          />
+                          <ToolContent>
+                            <ToolInput input={part.input} />
+                            <ToolOutput
+                              output={part.output}
+                              errorText={part.errorText}
+                            />
+                          </ToolContent>
+                        </Tool>
                       );
                     default:
                       return null;
