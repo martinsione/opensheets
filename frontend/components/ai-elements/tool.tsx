@@ -85,7 +85,7 @@ export const ToolHeader = ({
         className={cn(
           "truncate font-medium text-sm",
           state === "input-streaming"
-            ? "block h-5 w-48 animate-pulse rounded text-muted-foreground" // TODO: Probably better to have some thinking words with shimmer effect
+            ? "animate-pulse text-muted-foreground"
             : "",
         )}
       >

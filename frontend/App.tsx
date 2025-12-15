@@ -1,10 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import {
-  type ChatOnToolCallCallback,
-  lastAssistantMessageIsCompleteWithToolCalls,
-} from "ai";
+import { lastAssistantMessageIsCompleteWithToolCalls } from "ai";
 import { CopyIcon, RefreshCcwIcon } from "lucide-react";
 import { useState } from "react";
 import {
@@ -73,78 +70,6 @@ const MODELS = [
   },
 ] as const;
 
-async function handleClientToolCall({
-  addToolOutput,
-  toolCall,
-}: {
-  addToolOutput: ReturnType<
-    typeof useChat<SpreadsheetAgentUIMessage>
-  >["addToolOutput"];
-  toolCall: Parameters<
-    ChatOnToolCallCallback<SpreadsheetAgentUIMessage>
-  >[number]["toolCall"];
-}) {
-  // Must check !toolCall.dynamic to exclude dynamic tool calls from the union.
-  // Without this, TypeScript can't narrow the input type because the dynamic
-  // case (toolName: string, input: unknown) also matches any toolName check.
-  if (toolCall.dynamic) return;
-
-  const { toolCallId, toolName: tool, input } = toolCall;
-
-  switch (tool) {
-    case "getCellRanges": {
-      const output = await spreadsheetService.getCellRanges(input);
-      addToolOutput({ state: "output-available", tool, toolCallId, output });
-      break;
-    }
-    case "searchData": {
-      const output = await spreadsheetService.searchData(input);
-      addToolOutput({ state: "output-available", tool, toolCallId, output });
-      break;
-    }
-    case "setCellRange": {
-      const output = await spreadsheetService.setCellRange(input);
-      addToolOutput({ state: "output-available", tool, toolCallId, output });
-      break;
-    }
-    case "modifySheetStructure": {
-      const output = await spreadsheetService.modifySheetStructure(input);
-      addToolOutput({ state: "output-available", tool, toolCallId, output });
-      break;
-    }
-    case "modifyWorkbookStructure": {
-      const output = await spreadsheetService.modifyWorkbookStructure(input);
-      addToolOutput({ state: "output-available", tool, toolCallId, output });
-      break;
-    }
-    case "copyTo": {
-      const output = await spreadsheetService.copyTo(input);
-      addToolOutput({ state: "output-available", tool, toolCallId, output });
-      break;
-    }
-    case "getAllObjects": {
-      const output = await spreadsheetService.getAllObjects(input);
-      addToolOutput({ state: "output-available", tool, toolCallId, output });
-      break;
-    }
-    case "modifyObject": {
-      const output = await spreadsheetService.modifyObject(input);
-      addToolOutput({ state: "output-available", tool, toolCallId, output });
-      break;
-    }
-    case "resizeRange": {
-      const output = await spreadsheetService.resizeRange(input);
-      addToolOutput({ state: "output-available", tool, toolCallId, output });
-      break;
-    }
-    case "clearCellRange": {
-      const output = await spreadsheetService.clearCellRange(input);
-      addToolOutput({ state: "output-available", tool, toolCallId, output });
-      break;
-    }
-  }
-}
-
 export default function Chat() {
   const [input, setInput] = useState("");
   const [model, setModel] = useState<string>(MODELS[0].value);
@@ -152,7 +77,59 @@ export default function Chat() {
     useChat<SpreadsheetAgentUIMessage>({
       sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
       onToolCall: async ({ toolCall }) => {
-        await handleClientToolCall({ addToolOutput, toolCall });
+        // Must check !toolCall.dynamic to exclude dynamic tool calls from the union.
+        // Without this, TypeScript can't narrow the input type because the dynamic
+        // case (toolName: string, input: unknown) also matches any toolName check.
+        if (toolCall.dynamic) return;
+
+        const { toolCallId, toolName, input } = toolCall;
+
+        async function run<T>(fn: () => Promise<T>): Promise<void> {
+          try {
+            const output = await fn();
+            addToolOutput({
+              state: "output-available",
+              tool: toolName,
+              toolCallId,
+              output,
+            });
+          } catch (err) {
+            const errorText =
+              err instanceof Error ? err.message : "An unknown error occurred";
+            console.error(`Tool ${toolName} failed:`, err);
+            addToolOutput({
+              state: "output-error",
+              tool: toolName,
+              toolCallId,
+              errorText,
+            });
+          }
+        }
+
+        switch (toolName) {
+          case "getCellRanges":
+            return run(() => spreadsheetService.getCellRanges(input));
+          case "searchData":
+            return run(() => spreadsheetService.searchData(input));
+          case "setCellRange":
+            return run(() => spreadsheetService.setCellRange(input));
+          case "modifySheetStructure":
+            return run(() => spreadsheetService.modifySheetStructure(input));
+          case "modifyWorkbookStructure":
+            return run(() => spreadsheetService.modifyWorkbookStructure(input));
+          case "copyTo":
+            return run(() => spreadsheetService.copyTo(input));
+          case "getAllObjects":
+            return run(() => spreadsheetService.getAllObjects(input));
+          case "modifyObject":
+            return run(() => spreadsheetService.modifyObject(input));
+          case "resizeRange":
+            return run(() => spreadsheetService.resizeRange(input));
+          case "clearCellRange":
+            return run(() => spreadsheetService.clearCellRange(input));
+          default:
+            console.warn(`Unhandled tool: ${toolName}`);
+        }
       },
     });
 
@@ -269,7 +246,6 @@ export default function Chat() {
                     case "tool-resizeRange":
                     case "tool-searchData":
                     case "tool-setCellRange":
-                      console.log(`${part.type} - ${part.state}`, part);
                       return (
                         <Tool key={`${message.id}-${partIdx}`}>
                           <ToolHeader
