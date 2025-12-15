@@ -7,13 +7,7 @@ import {
   lastAssistantMessageIsCompleteWithToolCalls,
 } from "ai";
 import { CopyIcon, RefreshCcwIcon } from "lucide-react";
-import { useState } from "react";
-import {
-  Confirmation,
-  ConfirmationAction,
-  ConfirmationActions,
-  ConfirmationTitle,
-} from "@/frontend/components/ai-elements/confirmation";
+import { useMemo, useState } from "react";
 import {
   Conversation,
   ConversationContent,
@@ -62,6 +56,7 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/frontend/components/ai-elements/tool";
+import { ToolApprovalBar } from "@/frontend/components/ai-elements/tool-approval-bar";
 import type { SpreadsheetAgentUIMessage } from "@/server/ai/agent";
 import { writeTools } from "@/server/ai/tools";
 import * as spreadsheetService from "@/spreadsheet-service/excel";
@@ -119,8 +114,12 @@ export default function Chat() {
         toolCall.toolName as (typeof writeTools)[number],
       );
 
-      if (isWriteTool && editMode === "auto") {
-        addToolApprovalResponse({ id: toolCall.toolCallId, approved: true });
+      if (isWriteTool) {
+        if (editMode === "auto") {
+          addToolApprovalResponse({ id: toolCall.toolCallId, approved: true });
+          await executeTool(toolCall);
+        }
+        return;
       }
 
       await executeTool(toolCall);
@@ -197,6 +196,65 @@ export default function Chat() {
     });
 
     setInput("");
+  }
+
+  const pendingApproval = useMemo(() => {
+    for (const message of messages) {
+      if (message.role !== "assistant") continue;
+      for (const part of message.parts) {
+        if (
+          part.type.startsWith("tool-") &&
+          "state" in part &&
+          part.state === "approval-requested" &&
+          "approval" in part &&
+          part.approval?.id
+        ) {
+          return {
+            id: part.approval.id,
+            toolName: part.type.replace("tool-", ""),
+            state: part.state,
+            toolCallId: "toolCallId" in part ? part.toolCallId : undefined,
+            input: "input" in part ? part.input : undefined,
+          };
+        }
+      }
+    }
+    return null;
+  }, [messages]);
+
+  function handleApprove() {
+    if (!pendingApproval) return;
+
+    const toolName = pendingApproval.toolName as (typeof writeTools)[number];
+
+    addToolApprovalResponse({
+      id: pendingApproval.id,
+      approved: true,
+    });
+
+    if (writeTools.includes(toolName) && pendingApproval.toolCallId) {
+      executeTool({
+        // biome-ignore lint/suspicious/noExplicitAny: not worth dealing with this now
+        input: pendingApproval.input as any,
+        toolCallId: pendingApproval.toolCallId,
+        toolName,
+        dynamic: false,
+      });
+    }
+  }
+
+  function handleApproveAll() {
+    setEditMode("auto");
+    handleApprove();
+  }
+
+  function handleDecline() {
+    if (!pendingApproval) return;
+
+    addToolApprovalResponse({
+      id: pendingApproval.id,
+      approved: false,
+    });
   }
 
   return (
@@ -318,56 +376,6 @@ export default function Chat() {
                               output={part.output}
                               errorText={part.errorText}
                             />
-                            <Confirmation
-                              state={part.state}
-                              approval={part.approval}
-                            >
-                              <ConfirmationTitle>
-                                Allow this action?
-                              </ConfirmationTitle>
-                              <ConfirmationActions>
-                                <ConfirmationAction
-                                  variant="outline"
-                                  onClick={() =>
-                                    addToolApprovalResponse({
-                                      // biome-ignore lint/style/noNonNullAssertion: <>
-                                      id: part.approval!.id,
-                                      approved: false,
-                                    })
-                                  }
-                                >
-                                  Deny
-                                </ConfirmationAction>
-                                <ConfirmationAction
-                                  onClick={() => {
-                                    const toolName = part.type.replace(
-                                      "tool-",
-                                      "",
-                                    ) as (typeof writeTools)[number];
-
-                                    if (!writeTools.includes(toolName)) {
-                                      return;
-                                    }
-
-                                    addToolApprovalResponse({
-                                      // biome-ignore lint/style/noNonNullAssertion: <>
-                                      id: part.approval!.id,
-                                      approved: true,
-                                    });
-
-                                    executeTool({
-                                      // biome-ignore lint/suspicious/noExplicitAny: not worth dealing with this now
-                                      input: part.input as any,
-                                      toolCallId: part.toolCallId,
-                                      toolName,
-                                      dynamic: false,
-                                    });
-                                  }}
-                                >
-                                  Approve
-                                </ConfirmationAction>
-                              </ConfirmationActions>
-                            </Confirmation>
                           </ToolContent>
                         </Tool>
                       );
@@ -381,6 +389,12 @@ export default function Chat() {
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
+        <ToolApprovalBar
+          pendingApproval={pendingApproval}
+          onApprove={handleApprove}
+          onApproveAll={handleApproveAll}
+          onDecline={handleDecline}
+        />
         <PromptInput
           autoFocus
           className="px-3 **:data-[slot=input-group]:rounded-b-none"
