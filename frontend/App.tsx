@@ -397,6 +397,7 @@ export default function Chat() {
           </PromptInputHeader>
           <PromptInputBody>
             <PromptInputTextarea
+              className="text-sm"
               onChange={(e) => setInput(e.target.value)}
               value={input}
             />
