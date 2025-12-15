@@ -13,20 +13,20 @@ const wrappedAnthropic = (model: string) =>
     middleware: devToolsMiddleware(),
   });
 
+const Models = z.enum(["claude-sonnet-4-5", "claude-opus-4-5"]);
+
 export const SpreadsheetAgent = new ToolLoopAgent({
+  model: "", // Will be set in `prepareCall`
+  tools,
   callOptionsSchema: z.object({
-    model: z
-      .enum(["claude-sonnet-4-5", "claude-opus-4-5"])
-      .default("claude-opus-4-5"),
+    model: Models.default("claude-opus-4-5"),
     sheets: z.array(Sheet),
   }),
-  model: wrappedAnthropic("claude-opus-4-5"),
-  tools,
   prepareCall: ({ options, ...initialOptions }) => {
     return {
       ...initialOptions,
-      system: getSystemPrompt(options.sheets, "m"),
       model: wrappedAnthropic(options.model),
+      system: getSystemPrompt(options.sheets, "excel"),
       providerOptions: {
         anthropic: {
           thinking: { type: "enabled", budgetTokens: 16000 },

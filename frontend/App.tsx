@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import {
-  lastAssistantMessageIsCompleteWithApprovalResponses,
+  type ChatOnToolCallCallback,
   lastAssistantMessageIsCompleteWithToolCalls,
 } from "ai";
 import { CopyIcon, RefreshCcwIcon } from "lucide-react";
@@ -60,7 +60,6 @@ import {
   ToolOutput,
 } from "@/frontend/components/ai-elements/tool";
 import type { SpreadsheetAgentUIMessage } from "@/server/ai/agent";
-import { writeTools } from "@/server/ai/tools";
 import * as spreadsheetService from "@/spreadsheet-service/excel";
 
 const MODELS = [
@@ -74,20 +73,76 @@ const MODELS = [
   },
 ] as const;
 
-function lastAssistantMessageIsCompleteWithApprovalResponsesExcludingClientSideTools({
-  messages,
+async function handleClientToolCall({
+  addToolOutput,
+  toolCall,
 }: {
-  messages: SpreadsheetAgentUIMessage[];
+  addToolOutput: ReturnType<
+    typeof useChat<SpreadsheetAgentUIMessage>
+  >["addToolOutput"];
+  toolCall: Parameters<
+    ChatOnToolCallCallback<SpreadsheetAgentUIMessage>
+  >[number]["toolCall"];
 }) {
-  const lastMessage = messages.at(-1);
-  if (lastMessage?.role !== "assistant") {
-    return false;
-  }
+  // Must check !toolCall.dynamic to exclude dynamic tool calls from the union.
+  // Without this, TypeScript can't narrow the input type because the dynamic
+  // case (toolName: string, input: unknown) also matches any toolName check.
+  if (toolCall.dynamic) return;
 
-  return (
-    lastAssistantMessageIsCompleteWithApprovalResponses({ messages }) &&
-    !lastMessage.parts.some((part) => writeTools.includes(part.type))
-  );
+  const { toolCallId, toolName: tool, input } = toolCall;
+
+  switch (tool) {
+    case "getCellRanges": {
+      const output = await spreadsheetService.getCellRanges(input);
+      addToolOutput({ state: "output-available", tool, toolCallId, output });
+      break;
+    }
+    case "searchData": {
+      const output = await spreadsheetService.searchData(input);
+      addToolOutput({ state: "output-available", tool, toolCallId, output });
+      break;
+    }
+    case "setCellRange": {
+      const output = await spreadsheetService.setCellRange(input);
+      addToolOutput({ state: "output-available", tool, toolCallId, output });
+      break;
+    }
+    case "modifySheetStructure": {
+      const output = await spreadsheetService.modifySheetStructure(input);
+      addToolOutput({ state: "output-available", tool, toolCallId, output });
+      break;
+    }
+    case "modifyWorkbookStructure": {
+      const output = await spreadsheetService.modifyWorkbookStructure(input);
+      addToolOutput({ state: "output-available", tool, toolCallId, output });
+      break;
+    }
+    case "copyTo": {
+      const output = await spreadsheetService.copyTo(input);
+      addToolOutput({ state: "output-available", tool, toolCallId, output });
+      break;
+    }
+    case "getAllObjects": {
+      const output = await spreadsheetService.getAllObjects(input);
+      addToolOutput({ state: "output-available", tool, toolCallId, output });
+      break;
+    }
+    case "modifyObject": {
+      const output = await spreadsheetService.modifyObject(input);
+      addToolOutput({ state: "output-available", tool, toolCallId, output });
+      break;
+    }
+    case "resizeRange": {
+      const output = await spreadsheetService.resizeRange(input);
+      addToolOutput({ state: "output-available", tool, toolCallId, output });
+      break;
+    }
+    case "clearCellRange": {
+      const output = await spreadsheetService.clearCellRange(input);
+      addToolOutput({ state: "output-available", tool, toolCallId, output });
+      break;
+    }
+  }
 }
 
 export default function Chat() {
@@ -95,77 +150,13 @@ export default function Chat() {
   const [model, setModel] = useState<string>(MODELS[0].value);
   const { messages, sendMessage, status, regenerate, addToolOutput } =
     useChat<SpreadsheetAgentUIMessage>({
-      sendAutomaticallyWhen: ({ messages }) =>
-        lastAssistantMessageIsCompleteWithToolCalls({ messages }) ||
-        lastAssistantMessageIsCompleteWithApprovalResponsesExcludingClientSideTools(
-          { messages },
-        ),
+      sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
       onToolCall: async ({ toolCall }) => {
-        // Must check !toolCall.dynamic to exclude dynamic tool calls from the union.
-        // Without this, TypeScript can't narrow the input type because the dynamic
-        // case (toolName: string, input: unknown) also matches any toolName check.
-        if (toolCall.dynamic) return;
-
-        const { toolCallId, toolName: tool, input } = toolCall;
-        const state = "output-available" as const;
-
-        switch (tool) {
-          case "getCellRanges": {
-            const output = await spreadsheetService.getCellRanges(input);
-            addToolOutput({ state, tool, toolCallId, output });
-            break;
-          }
-          case "searchData": {
-            const output = await spreadsheetService.searchData(input);
-            addToolOutput({ state, tool, toolCallId, output });
-            break;
-          }
-          case "setCellRange": {
-            const output = await spreadsheetService.setCellRange(input);
-            addToolOutput({ state, tool, toolCallId, output });
-            break;
-          }
-          case "modifySheetStructure": {
-            const output = await spreadsheetService.modifySheetStructure(input);
-            addToolOutput({ state, tool, toolCallId, output });
-            break;
-          }
-          case "modifyWorkbookStructure": {
-            const output =
-              await spreadsheetService.modifyWorkbookStructure(input);
-            addToolOutput({ state, tool, toolCallId, output });
-            break;
-          }
-          case "copyTo": {
-            const output = await spreadsheetService.copyTo(input);
-            addToolOutput({ state, tool, toolCallId, output });
-            break;
-          }
-          case "getAllObjects": {
-            const output = await spreadsheetService.getAllObjects(input);
-            addToolOutput({ state, tool, toolCallId, output });
-            break;
-          }
-          case "modifyObject": {
-            const output = await spreadsheetService.modifyObject(input);
-            addToolOutput({ state, tool, toolCallId, output });
-            break;
-          }
-          case "resizeRange": {
-            const output = await spreadsheetService.resizeRange(input);
-            addToolOutput({ state, tool, toolCallId, output });
-            break;
-          }
-          case "clearCellRange": {
-            const output = await spreadsheetService.clearCellRange(input);
-            addToolOutput({ state, tool, toolCallId, output });
-            break;
-          }
-        }
+        await handleClientToolCall({ addToolOutput, toolCall });
       },
     });
 
-  const handleSubmit = async (message: PromptInputMessage) => {
+  async function handleSubmit(message: PromptInputMessage) {
     const hasText = Boolean(message.text);
     const hasAttachments = Boolean(message.files?.length);
     if (!(hasText || hasAttachments)) {
@@ -185,7 +176,7 @@ export default function Chat() {
     );
 
     setInput("");
-  };
+  }
 
   return (
     <div className="relative mx-auto size-full h-screen max-w-4xl">
@@ -218,16 +209,19 @@ export default function Chat() {
                         ))}
                     </Sources>
                   )}
-                {message.parts.map((part, i) => {
+                {message.parts.map((part, partIdx) => {
                   switch (part.type) {
                     case "text":
                       return (
-                        <Message key={`${message.id}-${i}`} from={message.role}>
+                        <Message
+                          key={`${message.id}-${partIdx}`}
+                          from={message.role}
+                        >
                           <MessageContent>
                             <MessageResponse>{part.text}</MessageResponse>
                           </MessageContent>
                           {message.role === "assistant" &&
-                            i === messages.length - 1 && (
+                            partIdx === messages.length - 1 && (
                               <MessageActions>
                                 <MessageAction
                                   onClick={() => regenerate()}
@@ -250,11 +244,11 @@ export default function Chat() {
                     case "reasoning":
                       return (
                         <Reasoning
-                          key={`${message.id}-${i}`}
+                          key={`${message.id}-${partIdx}`}
                           className="w-full"
                           isStreaming={
                             status === "streaming" &&
-                            i === message.parts.length - 1 &&
+                            partIdx === message.parts.length - 1 &&
                             message.id === messages.at(-1)?.id
                           }
                         >
@@ -275,8 +269,9 @@ export default function Chat() {
                     case "tool-resizeRange":
                     case "tool-searchData":
                     case "tool-setCellRange":
+                      console.log(`${part.type} - ${part.state}`, part);
                       return (
-                        <Tool key={`${message.id}-${i}`}>
+                        <Tool key={`${message.id}-${partIdx}`}>
                           <ToolHeader
                             state={part.state}
                             type={part.type}
@@ -311,14 +306,16 @@ export default function Chat() {
         </Conversation>
         <PromptInput
           autoFocus
-          className="px-2 **:data-[slot=input-group]:rounded-b-none"
+          className="px-3 **:data-[slot=input-group]:rounded-b-none"
           globalDrop
           multiple
           onSubmit={handleSubmit}
         >
-          <PromptInputHeader>
+          <PromptInputHeader className="p-0!">
             <PromptInputAttachments>
-              {(attachment) => <PromptInputAttachment data={attachment} />}
+              {(attachment) => (
+                <PromptInputAttachment data={attachment} className="truncate" />
+              )}
             </PromptInputAttachments>
           </PromptInputHeader>
           <PromptInputBody>

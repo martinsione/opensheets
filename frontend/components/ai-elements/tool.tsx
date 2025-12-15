@@ -79,12 +79,19 @@ export const ToolHeader = ({
     )}
     {...props}
   >
-    <div className="flex items-center gap-2">
-      <WrenchIcon className="size-4 text-muted-foreground" />
-      <span className="font-medium text-sm">
-        {title ?? type.split("-").slice(1).join("-")}
+    <div className="flex items-center gap-2 truncate">
+      <WrenchIcon className="size-4 shrink-0 text-muted-foreground" />
+      <span
+        className={cn(
+          "truncate font-medium text-sm",
+          state === "input-streaming"
+            ? "block h-5 w-48 animate-pulse rounded text-muted-foreground" // TODO: Probably better to have some thinking words with shimmer effect
+            : "",
+        )}
+      >
+        {title}
       </span>
-      {getStatusBadge(state)}
+      {/* {getStatusBadge(state)} */}
     </div>
     <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
   </CollapsibleTrigger>

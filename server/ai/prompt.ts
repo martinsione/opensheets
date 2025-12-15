@@ -481,17 +481,17 @@ Use citations when:
 
 export const getSystemPrompt = (
   sheets: Sheet[],
-  product: "m" | "g",
+  product: "excel" | "google-sheets",
   prompt = systemPromptTemplate,
 ) => {
   return prompt
     .replace(
       "{{product}}",
-      { m: "Microsoft Excel", g: "Google Sheets" }[product as "m" | "g"],
+      { excel: "Microsoft Excel", "google-sheets": "Google Sheets" }[product],
     )
     .replace("{{sheetsMetadata}}", getSheetsMetadata(sheets))
     .replace(
       "{{integrationPrompts}}",
-      product === "m" ? getIntegrationsPrompt() : "",
+      product === "excel" ? getIntegrationsPrompt() : "",
     );
 };
