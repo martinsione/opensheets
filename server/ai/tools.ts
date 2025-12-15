@@ -220,6 +220,7 @@ const getCellRanges = tool({
     "READ. Get detailed information about cells in specified ranges, including values, formulas, and key formatting. Accepts multiple ranges for efficient batch reading.",
   inputSchema: z
     .object({
+      explanation: ExplanationSchema,
       sheetId: z.number().describe("The ID of the sheet to read from"),
       ranges: z
         .array(z.string())
@@ -239,7 +240,6 @@ const getCellRanges = tool({
           `Maximum number of non-empty cells to return (default: ${DEFAULT_MAX_CELLS}). Ranges will be truncated at row boundaries to fit within this limit.`,
         ),
     })
-    .extend({ explanation: ExplanationSchema })
     .refine((e) => e.ranges && Array.isArray(e.ranges) && e.ranges.length > 0, {
       message: "At least one range must be provided",
       path: ["ranges"],
@@ -307,6 +307,7 @@ const searchData = tool({
     "READ. Search for text across the spreadsheet and return matching cell locations. Results can be used with getCellRanges for detailed analysis.",
   inputSchema: z
     .object({
+      explanation: ExplanationSchema,
       searchTerm: z
         .string()
         .describe("The text to search for in the spreadsheet"),
@@ -360,7 +361,6 @@ const searchData = tool({
         .optional()
         .describe("Optional search configuration"),
     })
-    .extend({ explanation: ExplanationSchema })
     .refine((e) => e.searchTerm && typeof e.searchTerm === "string", {
       message: "searchTerm is required and must be a string",
       path: ["searchTerm"],
@@ -396,6 +396,7 @@ const setCellRange = tool({
     "WRITE. Set values, formulas, notes, and/or formatting for a range of cells. CRITICAL ARRAY DIMENSIONS: The cells array must EXACTLY match range dimensions to avoid InvalidCellRangeError. Calculate: range 'A1:D3' = 3 rows × 4 columns = [[r1c1,r1c2,r1c3,r1c4],[r2c1,r2c2,r2c3,r2c4],[r3c1,r3c2,r3c3,r3c4]]. Range 'A41:N48' = 8 rows × 14 columns = 8 arrays with 14 cells each. Single cell 'A1' = [[cell]]. Column range 'B5:B7' = [[cell1],[cell2],[cell3]]. Use {} for empty cells. Always provide a clear explanation parameter.",
   inputSchema: z
     .object({
+      explanation: ExplanationSchema,
       sheetId: z
         .number()
         .describe(
@@ -510,7 +511,6 @@ const setCellRange = tool({
         "Optional row height adjustment after setting values. Automatically applied to all rows in the range.",
       ),
     })
-    .extend({ explanation: ExplanationSchema })
     .refine((e) => e.sheetId !== void 0 && e.sheetId !== null, {
       message: "sheetId is required",
       path: ["sheetId"],
@@ -552,6 +552,7 @@ const modifySheetStructure = tool({
     "WRITE. Modify sheet structure with various operations. See operation parameter for required fields.",
   inputSchema: z
     .object({
+      explanation: ExplanationSchema,
       sheetId: z.number().describe("ID of the sheet to modify"),
       operation: z
         .enum(["insert", "delete", "hide", "unhide", "freeze", "unfreeze"])
@@ -584,7 +585,6 @@ const modifySheetStructure = tool({
           "Number of rows/columns to operate on (default: 1). For delete 'A' count=3 means delete A:C. Required for freeze operations.",
         ),
     })
-    .extend({ explanation: ExplanationSchema })
     .refine(
       (e) =>
         !(
@@ -659,6 +659,7 @@ const modifyWorkbookStructure = tool({
     "WRITE. Create, delete, rename, or duplicate sheets in the spreadsheet workbook",
   inputSchema: z
     .object({
+      explanation: ExplanationSchema,
       operation: z
         .enum(["create", "delete", "rename", "duplicate"])
         .describe("Operation to perform"),
@@ -689,7 +690,6 @@ const modifyWorkbookStructure = tool({
           "New name for the sheet (required for rename, optional for duplicate)",
         ),
     })
-    .extend({ explanation: ExplanationSchema })
     .refine(
       (e) =>
         e.operation &&
@@ -734,43 +734,41 @@ const modifyWorkbookStructure = tool({
 const copyTo = tool({
   description:
     "WRITE. Copy a range to another location with automatic formula translation and pattern expansion. Excel will repeat source patterns to fill larger destinations and adjust relative references (C2=B2 becomes C3=B3). Perfect for financial models, loan schedules, data series. Example: Copy A12:G12 to A13:G370 to create 358 rows of formulas with auto-adjusted references.",
-  inputSchema: z
-    .object({
-      sheetId: z.number().describe("The ID of the sheet containing the ranges"),
-      sourceRange: z
-        .string()
-        .describe(
-          "A1 notation range containing the source data/formulas to copy (e.g., 'A12:G12')",
-        ),
-      destinationRange: z
-        .string()
-        .describe(
-          "A1 notation range to copy to (e.g., 'A13:G370'). Can be larger than source - pattern will repeat and formulas will auto-adjust (C12=B12 becomes C13=B13, C14=B14, etc)",
-        ),
-    })
-    .extend({ explanation: ExplanationSchema }),
+  inputSchema: z.object({
+    explanation: ExplanationSchema,
+    sheetId: z.number().describe("The ID of the sheet containing the ranges"),
+    sourceRange: z
+      .string()
+      .describe(
+        "A1 notation range containing the source data/formulas to copy (e.g., 'A12:G12')",
+      ),
+    destinationRange: z
+      .string()
+      .describe(
+        "A1 notation range to copy to (e.g., 'A13:G370'). Can be larger than source - pattern will repeat and formulas will auto-adjust (C12=B12 becomes C13=B13, C14=B14, etc)",
+      ),
+  }),
   outputSchema: z.object({}),
 });
 
 const getAllObjects = tool({
   description:
     "READ. Get all spreadsheet objects (pivot tables, charts, tables) from specified sheet or all sheets with their current configuration.",
-  inputSchema: z
-    .object({
-      sheetId: z
-        .number()
-        .optional()
-        .describe(
-          "Optional sheet ID. If not provided, gets objects from all sheets",
-        ),
-      id: z
-        .string()
-        .optional()
-        .describe(
-          "Optional object ID to filter by (returns single object if found)",
-        ),
-    })
-    .extend({ explanation: ExplanationSchema }),
+  inputSchema: z.object({
+    explanation: ExplanationSchema,
+    sheetId: z
+      .number()
+      .optional()
+      .describe(
+        "Optional sheet ID. If not provided, gets objects from all sheets",
+      ),
+    id: z
+      .string()
+      .optional()
+      .describe(
+        "Optional object ID to filter by (returns single object if found)",
+      ),
+  }),
   outputSchema: z.object({
     objects: z
       .array(z.union([PivotTableSchema, ChartSchema]))
@@ -783,6 +781,7 @@ const modifyObject = tool({
     "WRITE. Create, update, or delete spreadsheet objects. Create: omit id, provide objectType and properties. Update: provide id and partial properties to change (LIMITATION: cannot update source range or destination location - you must delete and recreate for those changes). Delete: provide id only. IMPORTANT: When recreating objects, always delete the existing object FIRST to avoid range conflicts, then create the new one.",
   inputSchema: z
     .object({
+      explanation: ExplanationSchema,
       operation: z
         .enum(["create", "update", "delete"])
         .describe("Operation to perform on the object"),
@@ -813,7 +812,6 @@ const modifyObject = tool({
           "Object properties to create/update. Provide fields relevant to the objectType.",
         ),
     })
-    .extend({ explanation: ExplanationSchema })
     .refine((e) => e.operation === "create" || e.id !== void 0, {
       message: "id is required for update and delete operations",
       path: ["id"],
@@ -840,6 +838,7 @@ const resizeRange = tool({
     "WRITE. Resize columns and/or rows in a sheet. Supports autofit (fit to content), specific sizes in character/point units, or standard size reset. Can target specific ranges or entire sheet.",
   inputSchema: z
     .object({
+      explanation: ExplanationSchema,
       sheetId: z.number().describe("The ID of the sheet to modify"),
       range: z
         .string()
@@ -850,7 +849,6 @@ const resizeRange = tool({
       width: SizeConfigSchema.optional().describe("Column width settings"),
       height: SizeConfigSchema.optional().describe("Row height settings"),
     })
-    .extend({ explanation: ExplanationSchema })
     .refine((e) => e.width || e.height, {
       message: "At least one of width or height must be specified",
       path: ["width", "height"],
@@ -865,23 +863,22 @@ const resizeRange = tool({
 const clearCellRange = tool({
   description:
     "WRITE. Clear cells in a range. By default clears only content (values/formulas) while preserving formatting. Use clearType='all' to remove both content and formatting, or clearType='formats' to remove only formatting.",
-  inputSchema: z
-    .object({
-      sheetId: z.number().describe("ID of the sheet to clear cells from"),
-      range: z
-        .string()
-        .describe(
-          'A1 notation range to clear (e.g., "A1:C10", "B5", "D:D", "3:3")',
-        ),
-      clearType: z
-        .enum(["all", "contents", "formats"])
-        .optional()
-        .default("contents")
-        .describe(
-          "What to clear: 'all' (content + formatting), 'contents' (values/formulas only), 'formats' (formatting only)",
-        ),
-    })
-    .extend({ explanation: ExplanationSchema }),
+  inputSchema: z.object({
+    explanation: ExplanationSchema,
+    sheetId: z.number().describe("ID of the sheet to clear cells from"),
+    range: z
+      .string()
+      .describe(
+        'A1 notation range to clear (e.g., "A1:C10", "B5", "D:D", "3:3")',
+      ),
+    clearType: z
+      .enum(["all", "contents", "formats"])
+      .optional()
+      .default("contents")
+      .describe(
+        "What to clear: 'all' (content + formatting), 'contents' (values/formulas only), 'formats' (formatting only)",
+      ),
+  }),
   outputSchema: z.object({}),
 });
 
