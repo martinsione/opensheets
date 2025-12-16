@@ -1,5 +1,5 @@
 {
-  "name": "sheets-agent",
+  "name": "opensheets",
   "private": true,
   "type": "module",
   "scripts": {

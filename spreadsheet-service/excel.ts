@@ -749,6 +749,10 @@ export async function modifyWorkbookStructure(
 
         await context.sync();
 
+        // Activate the new sheet so the user can see it
+        newSheet.activate();
+        await context.sync();
+
         return {
           sheetId: newSheet.position,
           sheetName: newSheet.name,
@@ -822,6 +826,10 @@ export async function modifyWorkbookStructure(
           copiedSheet.name = newName;
           await context.sync();
         }
+
+        // Activate the new sheet so the user can see it
+        copiedSheet.activate();
+        await context.sync();
 
         return {
           sheetId: copiedSheet.position,
@@ -1433,4 +1441,62 @@ function letterToColumn(letter: string): number {
     column = column * 26 + (letter.charCodeAt(i) - 64);
   }
   return column - 1;
+}
+
+/**
+ * Activates the specified sheet (switches to it if not already active).
+ */
+export async function activateSheet(sheetId: number): Promise<void> {
+  return await Excel.run(async (context) => {
+    const worksheets = context.workbook.worksheets;
+    worksheets.load("items/position");
+    await context.sync();
+
+    const worksheet = worksheets.items.find((ws) => ws.position === sheetId);
+    if (!worksheet) {
+      return;
+    }
+
+    worksheet.activate();
+    await context.sync();
+  });
+}
+
+/**
+ * Clears the current selection by selecting the active cell.
+ */
+export async function clearSelection(): Promise<void> {
+  return await Excel.run(async (context) => {
+    const activeCell = context.workbook.getActiveCell();
+    activeCell.select();
+    await context.sync();
+  });
+}
+
+/**
+ * Activates the specified sheet and selects a range.
+ * Use this to show the user which cells will be modified before a write operation.
+ */
+export async function selectRange(input: {
+  sheetId: number;
+  range: string;
+}): Promise<void> {
+  const { sheetId, range } = input;
+
+  return await Excel.run(async (context) => {
+    const worksheets = context.workbook.worksheets;
+    worksheets.load("items/position");
+    await context.sync();
+
+    const worksheet = worksheets.items.find((ws) => ws.position === sheetId);
+    if (!worksheet) {
+      return;
+    }
+
+    worksheet.activate();
+    const targetRange = worksheet.getRange(range);
+    targetRange.select();
+
+    await context.sync();
+  });
 }

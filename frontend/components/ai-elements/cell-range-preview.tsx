@@ -127,15 +127,28 @@ function cellStylesToCSS(styles?: CellStyles): CSSProperties {
   return css;
 }
 
-function formatCellValue(cell: Cell): string {
-  if (cell.formula) {
+function formatCellValue(cell: Cell, showFormula = false): string {
+  // When showing formula, prioritize formula over value
+  if (showFormula && cell.formula) {
     return cell.formula;
   }
+  // Otherwise, show the computed value
   if (cell.value === undefined || cell.value === null) {
+    // Fall back to formula if no value
+    if (cell.formula) return cell.formula;
     return "";
   }
   if (typeof cell.value === "boolean") {
     return cell.value ? "TRUE" : "FALSE";
+  }
+  if (typeof cell.value === "number") {
+    // Format large numbers with commas
+    if (Math.abs(cell.value) >= 1000) {
+      return cell.value.toLocaleString("en-US", {
+        maximumFractionDigits: 2,
+      });
+    }
+    return String(cell.value);
   }
   return String(cell.value);
 }
@@ -181,15 +194,35 @@ export function CellRangePreview({
                 {row.map((cell, colIndex) => {
                   const displayValue = formatCellValue(cell);
                   const cellStyle = cellStylesToCSS(cell.cellStyles);
+                  const hasFormula = Boolean(cell.formula);
+
+                  // Build tooltip with formula and/or full value
+                  const tooltipParts: string[] = [];
+                  if (hasFormula) {
+                    tooltipParts.push(`Formula: ${cell.formula}`);
+                    if (cell.value !== undefined && cell.value !== null) {
+                      tooltipParts.push(`Value: ${cell.value}`);
+                    }
+                  } else if (displayValue.length > 15) {
+                    tooltipParts.push(displayValue);
+                  }
+                  if (cell.note) {
+                    tooltipParts.push(`Note: ${cell.note}`);
+                  }
+                  const tooltip =
+                    tooltipParts.length > 0
+                      ? tooltipParts.join("\n")
+                      : undefined;
 
                   return (
                     <td
                       key={colIndex}
-                      className="max-w-[150px] truncate border-r px-2 py-1 last:border-r-0"
+                      className={cn(
+                        "max-w-[120px] truncate border-r px-2 py-1 last:border-r-0",
+                        hasFormula && "bg-blue-50/50 dark:bg-blue-950/20",
+                      )}
                       style={cellStyle}
-                      title={
-                        displayValue.length > 20 ? displayValue : undefined
-                      }
+                      title={tooltip}
                     >
                       {displayValue}
                     </td>

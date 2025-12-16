@@ -161,13 +161,88 @@ export const ToolInput = ({
 };
 
 export type ToolOutputProps = ComponentProps<"div"> & {
+  toolName?: string;
   state: ToolUIPart["state"];
   output: ToolUIPart["output"];
   errorText: ToolUIPart["errorText"];
 };
 
+/**
+ * Transforms getCellRanges output format into CellRangePreview format.
+ * Input: { cells: { "A1": "value", "B2": [computedValue, "=formula"] } }
+ * Output: 2D array of Cell objects matching the grid layout
+ */
+function transformCellRangesOutput(
+  dimension: string,
+  cells: Record<string, unknown>,
+): { range: string; cells: CellRangePreviewProps["cells"] } | null {
+  const rangeMatch = dimension.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/i);
+  if (!rangeMatch) return null;
+
+  const [, startColStr, startRowStr, endColStr, endRowStr] = rangeMatch;
+  if (!startColStr || !startRowStr || !endColStr || !endRowStr) return null;
+
+  const colToIndex = (col: string): number => {
+    let index = 0;
+    for (let i = 0; i < col.length; i++) {
+      index = index * 26 + (col.toUpperCase().charCodeAt(i) - 64);
+    }
+    return index - 1;
+  };
+
+  const indexToCol = (index: number): string => {
+    let column = "";
+    let num = index + 1;
+    while (num > 0) {
+      const remainder = (num - 1) % 26;
+      column = String.fromCharCode(65 + remainder) + column;
+      num = Math.floor((num - 1) / 26);
+    }
+    return column;
+  };
+
+  const startCol = colToIndex(startColStr);
+  const endCol = colToIndex(endColStr);
+  const startRow = parseInt(startRowStr, 10);
+  const endRow = parseInt(endRowStr, 10);
+
+  const numRows = endRow - startRow + 1;
+  const numCols = endCol - startCol + 1;
+
+  const grid: CellRangePreviewProps["cells"] = [];
+
+  for (let r = 0; r < numRows; r++) {
+    const row: CellRangePreviewProps["cells"][number] = [];
+    for (let c = 0; c < numCols; c++) {
+      const cellAddress = `${indexToCol(startCol + c)}${startRow + r}`;
+      const cellData = cells[cellAddress];
+
+      if (cellData === undefined || cellData === null) {
+        row.push({ value: "" });
+      } else if (Array.isArray(cellData)) {
+        // Format: [computedValue, formula, optionalNote?]
+        const [value, formula, note] = cellData;
+        row.push({
+          value: value ?? "",
+          formula: typeof formula === "string" ? formula : undefined,
+          note: typeof note === "string" ? note : undefined,
+        });
+      } else {
+        // Simple value
+        row.push({
+          value: cellData as string | number | boolean,
+        });
+      }
+    }
+    grid.push(row);
+  }
+
+  return { range: dimension, cells: grid };
+}
+
 export const ToolOutput = ({
   className,
+  toolName,
   state,
   output,
   errorText,
@@ -179,6 +254,60 @@ export const ToolOutput = ({
 
   if (!(output || errorText)) {
     return null;
+  }
+
+  // Handle getCellRanges output with grid preview
+  if (toolName === "getCellRanges" && typeof output === "object" && output) {
+    const typedOutput = output as {
+      worksheet?: {
+        name?: string;
+        dimension?: string;
+        cells?: Record<string, unknown>;
+      };
+      hasMore?: boolean;
+    };
+
+    if (
+      typedOutput.worksheet?.dimension &&
+      typedOutput.worksheet?.cells &&
+      typeof typedOutput.worksheet.cells === "object"
+    ) {
+      const transformed = transformCellRangesOutput(
+        typedOutput.worksheet.dimension,
+        typedOutput.worksheet.cells,
+      );
+
+      if (transformed) {
+        return (
+          <div className={cn("space-y-2 p-4", className)} {...props}>
+            <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+              Result
+            </h4>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                <span className="font-medium">
+                  {typedOutput.worksheet.name}
+                </span>
+                <span>•</span>
+                <span>{typedOutput.worksheet.dimension}</span>
+                {typedOutput.hasMore && (
+                  <>
+                    <span>•</span>
+                    <span className="text-yellow-600">
+                      Truncated (more data available)
+                    </span>
+                  </>
+                )}
+              </div>
+              <CellRangePreview
+                range={transformed.range}
+                cells={transformed.cells}
+              />
+            </div>
+          </div>
+        );
+      }
+    }
   }
 
   let Output = <div>{output as ReactNode}</div>;

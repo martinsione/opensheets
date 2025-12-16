@@ -169,6 +169,40 @@ export default function Chat() {
       if (toolCall.dynamic) return;
 
       if (isWriteTool(toolCall.toolName)) {
+        // Select the range that's about to be modified so the user can see it
+        const input = toolCall.input as Record<string, unknown>;
+        const sheetId =
+          typeof input.sheetId === "number" ? input.sheetId : undefined;
+
+        if (sheetId !== undefined) {
+          let range: string | undefined;
+
+          switch (toolCall.toolName) {
+            case "setCellRange":
+            case "clearCellRange":
+            case "resizeRange":
+              range = typeof input.range === "string" ? input.range : undefined;
+              break;
+            case "copyTo":
+              // Show the destination range (where data will be written)
+              range =
+                typeof input.destinationRange === "string"
+                  ? input.destinationRange
+                  : undefined;
+              break;
+            case "modifySheetStructure":
+            case "modifyObject":
+              // No specific range to select, but ensure we're on the right sheet
+              await spreadsheetService.activateSheet(sheetId);
+              break;
+            // modifyWorkbookStructure - handled after execution (activates new sheet on create/duplicate)
+          }
+
+          if (range) {
+            await spreadsheetService.selectRange({ sheetId, range });
+          }
+        }
+
         return;
       }
 
@@ -227,6 +261,11 @@ export default function Chat() {
           toolCallId,
           errorText,
         });
+      } finally {
+        // Clear the selection after write tools complete
+        if (isWriteTool(toolName)) {
+          await spreadsheetService.clearSelection();
+        }
       }
     }
 
@@ -470,6 +509,7 @@ export default function Chat() {
                                 input={part.input}
                               />
                               <ToolOutput
+                                toolName={part.type.replace("tool-", "")}
                                 state={part.state}
                                 output={part.output}
                                 errorText={part.errorText}
@@ -551,7 +591,7 @@ export default function Chat() {
           </PromptInputHeader>
           <PromptInputBody>
             <PromptInputTextarea
-              className="text-sm"
+              className="min-h-24 text-sm"
               onChange={(e) => setInput(e.target.value)}
               value={input}
             />
