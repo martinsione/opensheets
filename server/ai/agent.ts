@@ -5,12 +5,13 @@ import {
 import { devToolsMiddleware } from "@ai-sdk/devtools";
 import type { InferAgentUIMessage } from "ai";
 import { ToolLoopAgent, wrapLanguageModel } from "ai";
-import * as z from "zod";
+import type * as z from "zod";
 import { getSystemPrompt } from "@/server/ai/prompt";
+import {
+  callOptionsSchema,
+  type messageMetadataSchema,
+} from "@/server/ai/schema";
 import { tools, writeTools } from "@/server/ai/tools";
-import { Sheet } from "@/spreadsheet-service";
-
-const Models = z.enum(["claude-sonnet-4-5", "claude-opus-4-5"]);
 
 const toolsWithApprovalRequiredConfigured = Object.fromEntries(
   Object.entries(tools).map(([name, toolDef]) => [
@@ -24,15 +25,11 @@ const toolsWithApprovalRequiredConfigured = Object.fromEntries(
 export const SpreadsheetAgent = new ToolLoopAgent({
   model: "", // Will be set in `prepareCall`
   tools: toolsWithApprovalRequiredConfigured,
-  callOptionsSchema: z.object({
-    model: Models.default("claude-opus-4-5"),
-    ANTHROPIC_API_KEY: z.string(),
-    sheets: z.array(Sheet),
-  }),
+  callOptionsSchema,
   prepareCall: ({ options, ...initialOptions }) => {
-    const anthropic = createAnthropic({ apiKey: options.ANTHROPIC_API_KEY });
+    const anthropic = createAnthropic({ apiKey: options.anthropicApiKey });
     const wrappedModel = wrapLanguageModel({
-      model: anthropic(options.model),
+      model: anthropic(options.model.replace("anthropic:", "")),
       middleware: devToolsMiddleware(),
     });
 
@@ -50,5 +47,6 @@ export const SpreadsheetAgent = new ToolLoopAgent({
 });
 
 export type SpreadsheetAgentUIMessage = InferAgentUIMessage<
-  typeof SpreadsheetAgent
+  typeof SpreadsheetAgent,
+  z.infer<typeof messageMetadataSchema>
 >;

@@ -1,32 +1,41 @@
-import { createAgentUIStreamResponse } from "ai";
+import { createAgentUIStreamResponse, smoothStream } from "ai";
+import type * as z from "zod";
 import {
   SpreadsheetAgent,
   type SpreadsheetAgentUIMessage,
 } from "@/server/ai/agent";
-import type { Sheet } from "@/spreadsheet-service";
+import type {
+  callOptionsSchema,
+  messageMetadataSchema,
+} from "@/server/ai/schema";
+import type { tools } from "@/server/ai/tools";
 
 async function POST(req: Request) {
   const body = (await req.json()) as {
     messages: SpreadsheetAgentUIMessage[];
-    model: string;
-    ANTHROPIC_API_KEY: string;
-    sheets: Sheet[];
+    options: z.infer<typeof callOptionsSchema>;
   };
 
-  if (!body.ANTHROPIC_API_KEY) {
+  if (!body.options.anthropicApiKey) {
     return new Response("API key is required", { status: 400 });
   }
 
-  return createAgentUIStreamResponse({
+  return createAgentUIStreamResponse<
+    z.infer<typeof callOptionsSchema>,
+    typeof tools,
+    never,
+    z.infer<typeof messageMetadataSchema>
+  >({
     agent: SpreadsheetAgent,
-    options: {
-      model: body.model,
-      ANTHROPIC_API_KEY: body.ANTHROPIC_API_KEY,
-      sheets: body.sheets,
-    },
-    messages: body.messages,
-    sendReasoning: true,
+    options: body.options,
     sendSources: true,
+    uiMessages: body.messages,
+    experimental_transform: [smoothStream()],
+    messageMetadata: ({ part }) => {
+      if (part.type === "finish") {
+        return { model: body.options.model, ...part.totalUsage };
+      }
+    },
   });
 }
 

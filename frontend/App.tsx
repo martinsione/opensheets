@@ -15,6 +15,19 @@ import {
   SettingsIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import type * as z from "zod";
+import {
+  Context,
+  ContextCacheUsage,
+  ContextContent,
+  ContextContentBody,
+  ContextContentFooter,
+  ContextContentHeader,
+  ContextInputUsage,
+  ContextOutputUsage,
+  ContextReasoningUsage,
+  ContextTrigger,
+} from "@/frontend/components/ai-elements/context";
 import {
   Conversation,
   ConversationContent,
@@ -85,19 +98,16 @@ import {
 } from "@/frontend/components/ui/select";
 import { useLocalStorage } from "@/frontend/lib/utils";
 import type { SpreadsheetAgentUIMessage } from "@/server/ai/agent";
+import {
+  type callOptionsSchema,
+  messageMetadataSchema,
+  models,
+} from "@/server/ai/schema";
 import { writeTools } from "@/server/ai/tools";
 import * as spreadsheetService from "@/spreadsheet-service/excel";
 
-const MODELS = [
-  {
-    name: "Claude Opus 4.5",
-    value: "claude-opus-4-5",
-  },
-  {
-    name: "Claude Sonnet 4.5",
-    value: "claude-sonnet-4-5",
-  },
-] as const;
+type CallOptionsSchema = z.infer<typeof callOptionsSchema>;
+type Model = CallOptionsSchema["model"];
 
 const EDIT_MODES = [
   {
@@ -114,7 +124,7 @@ const EDIT_MODES = [
 
 export default function Chat() {
   const [input, setInput] = useState("");
-  const [model, setModel] = useLocalStorage<string>("model", MODELS[0].value);
+  const [model, setModel] = useLocalStorage<Model>("model", models[0].value);
   const [editMode, setEditMode] = useState<"ask" | "auto">(EDIT_MODES[0].value);
   const [apiKey, setApiKey] = useLocalStorage("ANTHROPIC_API_KEY", "");
   const [apiKeyInput, setApiKeyInput] = useState("");
@@ -128,15 +138,18 @@ export default function Chat() {
     addToolOutput,
     addToolApprovalResponse,
   } = useChat<SpreadsheetAgentUIMessage>({
+    messageMetadataSchema,
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest: async ({ id, messages }) => ({
         body: {
           id,
           messages,
-          model,
-          ANTHROPIC_API_KEY: apiKey,
-          sheets: await spreadsheetService.getSheets(),
+          options: {
+            anthropicApiKey: apiKey,
+            model,
+            sheets: await spreadsheetService.getSheets(),
+          } satisfies CallOptionsSchema,
         },
       }),
     }),
@@ -159,6 +172,8 @@ export default function Chat() {
     },
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
+
+  console.log("messages", JSON.stringify(messages, null, 0));
 
   function executeTool(
     toolCall: Parameters<
@@ -255,15 +270,36 @@ export default function Chat() {
     return null;
   }, [messages]);
 
+  const context = useMemo(() => {
+    const lastMessage = messages.at(-1);
+    if (!lastMessage) return null;
+    const {
+      inputTokens,
+      outputTokens,
+      reasoningTokens,
+      cachedInputTokens,
+      totalTokens,
+    } = lastMessage.metadata ?? {};
+
+    return {
+      maxTokens: 200_000,
+      modelId: lastMessage.metadata?.model ?? undefined,
+      usage: {
+        inputTokens: inputTokens ?? 0,
+        outputTokens: outputTokens ?? 0,
+        reasoningTokens: reasoningTokens ?? 0,
+        cachedInputTokens: cachedInputTokens ?? 0,
+      },
+      usedTokens: totalTokens ?? 0,
+    };
+  }, [messages]);
+
   function handleApprove() {
     if (!pendingApproval) return;
 
     const toolName = pendingApproval.toolName as (typeof writeTools)[number];
 
-    addToolApprovalResponse({
-      id: pendingApproval.id,
-      approved: true,
-    });
+    addToolApprovalResponse({ id: pendingApproval.id, approved: true });
 
     if (writeTools.includes(toolName) && pendingApproval.toolCallId) {
       executeTool({
@@ -284,10 +320,7 @@ export default function Chat() {
   function handleDecline() {
     if (!pendingApproval) return;
 
-    addToolApprovalResponse({
-      id: pendingApproval.id,
-      approved: false,
-    });
+    addToolApprovalResponse({ id: pendingApproval.id, approved: false });
   }
 
   function handleSaveApiKey() {
@@ -307,13 +340,16 @@ export default function Chat() {
             <Button variant="ghost" size="icon" onClick={handleNewChat}>
               <PlusIcon className="size-4" />
             </Button>
-            <Select value={model} onValueChange={setModel}>
+            <Select
+              value={model}
+              onValueChange={(val) => setModel(val as Model)}
+            >
               <SelectTrigger className="w-[180px] border-none shadow-none hover:bg-accent hover:text-accent-foreground">
                 <Anthropic className="size-4 fill-[#D97757]" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {MODELS.map((m) => (
+                {models.map((m) => (
                   <SelectItem key={m.value} value={m.value}>
                     {m.name}
                   </SelectItem>
@@ -544,6 +580,26 @@ export default function Chat() {
                   ))}
                 </PromptInputSelectContent>
               </PromptInputSelect>
+              {context && (
+                <Context
+                  maxTokens={context.maxTokens}
+                  modelId={context.modelId}
+                  usage={context.usage}
+                  usedTokens={context.usedTokens}
+                >
+                  <ContextTrigger />
+                  <ContextContent>
+                    <ContextContentHeader />
+                    <ContextContentBody>
+                      <ContextInputUsage />
+                      <ContextOutputUsage />
+                      <ContextReasoningUsage />
+                      <ContextCacheUsage />
+                    </ContextContentBody>
+                    <ContextContentFooter />
+                  </ContextContent>
+                </Context>
+              )}
             </PromptInputTools>
             <PromptInputSubmit disabled={!input && !status} status={status} />
           </PromptInputFooter>
