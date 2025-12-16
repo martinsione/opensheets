@@ -14,7 +14,7 @@ import {
   RefreshCcwIcon,
   SettingsIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import type * as z from "zod";
 import {
   Context,
@@ -103,11 +103,16 @@ import {
   messageMetadataSchema,
   models,
 } from "@/server/ai/schema";
-import { writeTools } from "@/server/ai/tools";
+import { type tools, writeTools } from "@/server/ai/tools";
 import * as spreadsheetService from "@/spreadsheet-service/excel";
 
 type CallOptionsSchema = z.infer<typeof callOptionsSchema>;
 type Model = CallOptionsSchema["model"];
+
+/** Distributive Omit - applies Omit to each member of a union individually */
+type DistributiveOmit<T, K extends keyof T> = T extends object
+  ? Omit<T, K>
+  : never;
 
 const EDIT_MODES = [
   {
@@ -122,13 +127,20 @@ const EDIT_MODES = [
   },
 ] as const;
 
+function isWriteTool(toolName: keyof typeof tools) {
+  return writeTools.includes(toolName as (typeof writeTools)[number]);
+}
+
 export default function Chat() {
   const [input, setInput] = useState("");
   const [model, setModel] = useLocalStorage<Model>("model", models[0].value);
-  const [editMode, setEditMode] = useState<"ask" | "auto">(EDIT_MODES[0].value);
-  const [apiKey, setApiKey] = useLocalStorage("ANTHROPIC_API_KEY", "");
+  const [anthropicApiKey, setAnthropicApiKey] = useLocalStorage(
+    "ANTHROPIC_API_KEY",
+    "",
+  );
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [editMode, setEditMode] = useState<"ask" | "auto">(EDIT_MODES[0].value);
 
   const {
     messages,
@@ -146,7 +158,7 @@ export default function Chat() {
           id,
           messages,
           options: {
-            anthropicApiKey: apiKey,
+            anthropicApiKey,
             model,
             sheets: await spreadsheetService.getSheets(),
           } satisfies CallOptionsSchema,
@@ -156,15 +168,7 @@ export default function Chat() {
     onToolCall: async ({ toolCall }) => {
       if (toolCall.dynamic) return;
 
-      const isWriteTool = writeTools.includes(
-        toolCall.toolName as (typeof writeTools)[number],
-      );
-
-      if (isWriteTool) {
-        if (editMode === "auto") {
-          addToolApprovalResponse({ id: toolCall.toolCallId, approved: true });
-          await executeTool(toolCall);
-        }
+      if (isWriteTool(toolCall.toolName)) {
         return;
       }
 
@@ -173,14 +177,35 @@ export default function Chat() {
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
 
-  console.log("messages", JSON.stringify(messages, null, 0));
+  const context = useMemo(() => {
+    const lastMessage = messages.at(-1);
+    if (!lastMessage) return null;
+    const { metadata } = lastMessage;
+
+    return {
+      maxTokens: 200_000,
+      modelId: lastMessage.metadata?.model ?? undefined,
+      usage: {
+        inputTokens: metadata?.inputTokens ?? 0,
+        outputTokens: metadata?.outputTokens ?? 0,
+        reasoningTokens: metadata?.reasoningTokens ?? 0,
+        cachedInputTokens: metadata?.cachedInputTokens ?? 0,
+      },
+      usedTokens: metadata?.totalTokens ?? 0,
+    };
+  }, [messages]);
 
   function executeTool(
-    toolCall: Parameters<
-      ChatOnToolCallCallback<SpreadsheetAgentUIMessage>
-    >[number]["toolCall"],
+    toolCall: DistributiveOmit<
+      Extract<
+        Parameters<
+          ChatOnToolCallCallback<SpreadsheetAgentUIMessage>
+        >[number]["toolCall"],
+        { dynamic?: false }
+      >,
+      "dynamic"
+    >,
   ) {
-    if (toolCall.dynamic) return;
     const { toolName, toolCallId, input } = toolCall;
 
     async function run<T>(fn: () => Promise<T>): Promise<void> {
@@ -246,98 +271,18 @@ export default function Chat() {
     setInput("");
   }
 
-  const pendingApproval = useMemo(() => {
-    for (const message of messages) {
-      if (message.role !== "assistant") continue;
-      for (const part of message.parts) {
-        if (
-          part.type.startsWith("tool-") &&
-          "state" in part &&
-          part.state === "approval-requested" &&
-          "approval" in part &&
-          part.approval?.id
-        ) {
-          return {
-            id: part.approval.id,
-            toolName: part.type.replace("tool-", ""),
-            state: part.state,
-            toolCallId: "toolCallId" in part ? part.toolCallId : undefined,
-            input: "input" in part ? part.input : undefined,
-          };
-        }
-      }
-    }
-    return null;
-  }, [messages]);
-
-  const context = useMemo(() => {
-    const lastMessage = messages.at(-1);
-    if (!lastMessage) return null;
-    const {
-      inputTokens,
-      outputTokens,
-      reasoningTokens,
-      cachedInputTokens,
-      totalTokens,
-    } = lastMessage.metadata ?? {};
-
-    return {
-      maxTokens: 200_000,
-      modelId: lastMessage.metadata?.model ?? undefined,
-      usage: {
-        inputTokens: inputTokens ?? 0,
-        outputTokens: outputTokens ?? 0,
-        reasoningTokens: reasoningTokens ?? 0,
-        cachedInputTokens: cachedInputTokens ?? 0,
-      },
-      usedTokens: totalTokens ?? 0,
-    };
-  }, [messages]);
-
-  function handleApprove() {
-    if (!pendingApproval) return;
-
-    const toolName = pendingApproval.toolName as (typeof writeTools)[number];
-
-    addToolApprovalResponse({ id: pendingApproval.id, approved: true });
-
-    if (writeTools.includes(toolName) && pendingApproval.toolCallId) {
-      executeTool({
-        // biome-ignore lint/suspicious/noExplicitAny: not worth dealing with this now
-        input: pendingApproval.input as any,
-        toolCallId: pendingApproval.toolCallId,
-        toolName,
-        dynamic: false,
-      });
-    }
-  }
-
-  function handleApproveAll() {
-    setEditMode("auto");
-    handleApprove();
-  }
-
-  function handleDecline() {
-    if (!pendingApproval) return;
-
-    addToolApprovalResponse({ id: pendingApproval.id, approved: false });
-  }
-
-  function handleSaveApiKey() {
-    setApiKey(apiKeyInput);
-    setSettingsOpen(false);
-  }
-
-  function handleNewChat() {
-    window.location.reload();
-  }
-
   return (
     <div className="relative mx-auto size-full h-screen max-w-4xl">
       <div className="flex h-full flex-col">
         <header className="flex items-center justify-between border-b px-4 py-2">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={handleNewChat}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                window.location.reload();
+              }}
+            >
               <PlusIcon className="size-4" />
             </Button>
             <Select
@@ -360,7 +305,7 @@ export default function Chat() {
           <Dialog
             open={settingsOpen}
             onOpenChange={(open) => {
-              if (open) setApiKeyInput(apiKey);
+              if (open) setApiKeyInput(anthropicApiKey);
               setSettingsOpen(open);
             }}
           >
@@ -395,7 +340,14 @@ export default function Chat() {
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={handleSaveApiKey}>Save</Button>
+                <Button
+                  onClick={() => {
+                    setAnthropicApiKey(apiKeyInput);
+                    setSettingsOpen(false);
+                  }}
+                >
+                  Save
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -489,40 +441,90 @@ export default function Chat() {
                     case "tool-modifyWorkbookStructure":
                     case "tool-resizeRange":
                     case "tool-searchData":
-                    case "tool-setCellRange":
+                    case "tool-setCellRange": {
                       return (
-                        <Tool
+                        <Fragment
                           key={`${message.id}-${partIdx}-${part.state}`}
-                          defaultOpen={part.state === "approval-requested"}
                         >
-                          <ToolHeader
-                            state={part.state}
-                            type={part.type}
-                            title={
-                              part.type === "tool-bashCodeExecution"
-                                ? "Executing Bash Code"
-                                : part.type === "tool-codeExecution"
-                                  ? "Executing Code"
-                                  : part.type === "tool-textEditor"
-                                    ? "Editing Text"
-                                    : part.type === "tool-webSearch"
-                                      ? "Searching the Web"
-                                      : part.input?.explanation
-                            }
-                          />
-                          <ToolContent>
-                            <ToolInput
-                              toolName={part.type.replace("tool-", "")}
-                              input={part.input}
-                            />
-                            <ToolOutput
+                          <Tool
+                            defaultOpen={part.state === "approval-requested"}
+                          >
+                            <ToolHeader
                               state={part.state}
-                              output={part.output}
-                              errorText={part.errorText}
+                              type={part.type}
+                              title={
+                                part.type === "tool-bashCodeExecution"
+                                  ? "Executing Bash Code"
+                                  : part.type === "tool-codeExecution"
+                                    ? "Executing Code"
+                                    : part.type === "tool-textEditor"
+                                      ? "Editing Text"
+                                      : part.type === "tool-webSearch"
+                                        ? "Searching the Web"
+                                        : part.input?.explanation
+                              }
                             />
-                          </ToolContent>
-                        </Tool>
+                            <ToolContent>
+                              <ToolInput
+                                toolName={part.type.replace("tool-", "")}
+                                input={part.input}
+                              />
+                              <ToolOutput
+                                state={part.state}
+                                output={part.output}
+                                errorText={part.errorText}
+                              />
+                            </ToolContent>
+                          </Tool>
+                          {(() => {
+                            if (part.state !== "approval-requested") return;
+
+                            const toolName = part.type.replace(
+                              "tool-",
+                              "",
+                            ) as keyof typeof tools;
+
+                            const approve = () => {
+                              addToolApprovalResponse({
+                                id: part.approval.id,
+                                approved: true,
+                              });
+                              executeTool({
+                                // biome-ignore lint/suspicious/noExplicitAny: <>
+                                input: part.input as any,
+                                toolCallId: part.toolCallId,
+                                toolName,
+                              });
+                            };
+
+                            if (editMode === "auto") {
+                              approve();
+                              return null;
+                            }
+
+                            return (
+                              <ToolApprovalBar
+                                key={`${message.id}-${partIdx}-${part.state}`}
+                                toolName={toolName}
+                                onDecline={() => {
+                                  addToolApprovalResponse({
+                                    id: part.approval.id,
+                                    approved: false,
+                                  });
+                                }}
+                                onApprove={() => {
+                                  approve();
+                                }}
+                                onApproveAll={() => {
+                                  setEditMode("auto");
+                                  approve();
+                                }}
+                              />
+                            );
+                          })()}
+                        </Fragment>
                       );
+                    }
                     default:
                       return null;
                   }
@@ -533,12 +535,6 @@ export default function Chat() {
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
-        <ToolApprovalBar
-          pendingApproval={pendingApproval}
-          onApprove={handleApprove}
-          onApproveAll={handleApproveAll}
-          onDecline={handleDecline}
-        />
         <PromptInput
           autoFocus
           className="px-3 **:data-[slot=input-group]:rounded-b-none"

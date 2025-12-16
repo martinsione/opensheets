@@ -42,6 +42,10 @@ export const SpreadsheetAgent = new ToolLoopAgent({
           thinking: { type: "enabled", budgetTokens: 16000 },
         } satisfies AnthropicProviderOptions,
       },
+      headers: {
+        "anthropic-beta":
+          "interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
+      },
     };
   },
 });

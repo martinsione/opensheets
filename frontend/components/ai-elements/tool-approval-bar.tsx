@@ -1,59 +1,64 @@
 "use client";
 
-import type { ToolUIPart } from "ai";
 import { Hand } from "lucide-react";
-import { useCallback, useEffect } from "react";
-
-type PendingApproval = {
-  id: string;
-  toolName: string;
-  state: ToolUIPart["state"];
-};
+import { useCallback, useEffectEvent } from "react";
+import type { tools, writeTools } from "@/server/ai/tools";
+import { Button } from "../ui/button";
 
 export type ToolApprovalBarProps = {
-  pendingApproval: PendingApproval | null;
+  toolName: keyof typeof tools;
   onApprove: () => void;
   onApproveAll: () => void;
   onDecline: () => void;
 };
 
+function formatToolName(toolName: (typeof writeTools)[number]): string {
+  const nameMap: Record<(typeof writeTools)[number], string> = {
+    clearCellRange: "clear cells",
+    copyTo: "copy data",
+    modifyObject: "modify object",
+    modifySheetStructure: "modify sheet structure",
+    modifyWorkbookStructure: "modify workbook",
+    setCellRange: "edit cells",
+  };
+
+  return nameMap[toolName] || toolName.replace(/([A-Z])/g, " $1").toLowerCase();
+}
+
 export function ToolApprovalBar({
-  pendingApproval,
+  toolName,
   onApprove,
   onApproveAll,
   onDecline,
 }: ToolApprovalBarProps) {
-  const isOpen = pendingApproval?.state === "approval-requested";
-
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!isOpen) return;
-
       if (e.key === "Escape") {
         e.preventDefault();
         onDecline();
+      } else if (e.shiftKey && e.key === "Enter") {
+        e.preventDefault();
+        onApproveAll();
       } else if (e.key === "Enter") {
         e.preventDefault();
         onApprove();
       }
     },
-    [isOpen, onDecline, onApprove],
+    [onDecline, onApprove, onApproveAll],
   );
 
-  useEffect(() => {
+  useEffectEvent(() => {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+  });
 
-  if (!isOpen) return null;
-
-  const toolDisplayName = pendingApproval?.toolName
-    ? formatToolName(pendingApproval.toolName)
+  const toolDisplayName = toolName
+    ? formatToolName(toolName as (typeof writeTools)[number])
     : "perform action";
 
   return (
-    <div className="border-t bg-background px-3 py-3">
-      <div className="flex items-center gap-2 pb-2">
+    <div className="-translate-x-1/2 fixed bottom-0 left-1/2 z-50 w-full max-w-4xl rounded-t-3xl border border-t bg-background px-6 py-4">
+      <div className="flex items-center gap-2 pb-4">
         <Hand className="size-4 text-muted-foreground" />
         <span className="font-medium text-sm">Permission required</span>
         <span className="text-muted-foreground text-sm">·</span>
@@ -62,51 +67,34 @@ export function ToolApprovalBar({
         </span>
       </div>
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onApprove}
-          className="flex items-center gap-2 rounded-md border bg-primary px-3 py-1.5 text-primary-foreground transition-colors hover:bg-primary/90"
-        >
+      <div className="flex flex-col gap-2">
+        <Button type="button" variant="default" onClick={onApprove} size="sm">
           <span className="text-sm">Allow</span>
           <kbd className="rounded bg-primary-foreground/20 px-1.5 py-0.5 font-mono text-xs">
             ↵
           </kbd>
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
           onClick={onApproveAll}
-          className="rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+          variant="outline"
+          size="sm"
         >
           Allow all edits
-        </button>
+          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs"></kbd>
+          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">
+            ⇧ + ↵
+          </kbd>
+        </Button>
 
-        <button
-          type="button"
-          onClick={onDecline}
-          className="flex items-center gap-2 rounded-md border px-3 py-1.5 transition-colors hover:bg-muted"
-        >
+        <Button type="button" onClick={onDecline} variant="outline" size="sm">
           <span className="text-sm">Decline</span>
           <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">
             ESC
           </kbd>
-        </button>
+        </Button>
       </div>
     </div>
   );
-}
-
-function formatToolName(toolName: string): string {
-  const nameMap: Record<string, string> = {
-    setCellRange: "edit cells",
-    modifySheetStructure: "modify sheet structure",
-    modifyWorkbookStructure: "modify workbook",
-    copyTo: "copy data",
-    modifyObject: "modify object",
-    resizeRange: "resize range",
-    clearCellRange: "clear cells",
-  };
-
-  return nameMap[toolName] || toolName.replace(/([A-Z])/g, " $1").toLowerCase();
 }
