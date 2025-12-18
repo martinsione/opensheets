@@ -492,7 +492,7 @@ export default function Chat({ spreadsheetService, environment }: ChatProps) {
                                     : part.type === "tool-textEditor"
                                       ? "Editing Text"
                                       : part.type === "tool-webSearch"
-                                        ? "Searching the Web"
+                                        ? `Searching "${part.input?.query}"`
                                         : part.input?.explanation
                               }
                             />
