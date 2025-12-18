@@ -4,12 +4,12 @@ import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import { BrainIcon, ChevronDownIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { createContext, memo, useContext, useEffect, useState } from "react";
-// import { Streamdown } from "streamdown";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/frontend/components/ui/collapsible";
+import { Streamdown } from "@/frontend/lib/streamdown";
 import { cn } from "@/frontend/lib/utils";
 import { Shimmer } from "./shimmer";
 
@@ -19,10 +19,6 @@ type ReasoningContextValue = {
   setIsOpen: (open: boolean) => void;
   duration: number | undefined;
 };
-
-function Streamdown(args: React.ComponentProps<"div">) {
-  return <div {...args}></div>;
-}
 
 const ReasoningContext = createContext<ReasoningContextValue | null>(null);
 

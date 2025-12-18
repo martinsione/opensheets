@@ -7,6 +7,7 @@ import { Button } from "../ui/button";
 
 export type ToolApprovalBarProps = {
   toolName: keyof typeof tools;
+  explanation: string;
   onApprove: () => void;
   onApproveAll: () => void;
   onDecline: () => void;
@@ -27,6 +28,7 @@ function formatToolName(toolName: (typeof writeTools)[number]): string {
 
 export function ToolApprovalBar({
   toolName,
+  explanation,
   onApprove,
   onApproveAll,
   onDecline,
@@ -57,30 +59,26 @@ export function ToolApprovalBar({
     : "perform action";
 
   return (
-    <div className="-translate-x-1/2 fixed bottom-0 left-1/2 z-50 w-full max-w-4xl rounded-t-3xl border border-t bg-background px-6 py-4">
-      <div className="flex items-center gap-2 pb-4">
-        <Hand className="size-4 text-muted-foreground" />
-        <span className="font-medium text-sm">Permission required</span>
-        <span className="text-muted-foreground text-sm">·</span>
+    <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-4xl -translate-x-1/2 rounded-t-3xl border border-t bg-background px-6 py-4">
+      <div className="flex flex-col gap-2 pb-4">
+        <div className="flex items-center gap-2">
+          <Hand className="size-4 text-muted-foreground" />
+          <span className="font-medium text-sm">Permission required</span>
+        </div>
         <span className="text-muted-foreground text-sm">
-          Agent wants to {toolDisplayName}
+          Agent wants to {explanation}
         </span>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Button type="button" variant="default" onClick={onApprove} size="sm">
-          <span className="text-sm">Allow</span>
+        <Button type="button" variant="default" onClick={onApprove}>
+          Allow
           <kbd className="rounded bg-primary-foreground/20 px-1.5 py-0.5 font-mono text-xs">
             ↵
           </kbd>
         </Button>
 
-        <Button
-          type="button"
-          onClick={onApproveAll}
-          variant="outline"
-          size="sm"
-        >
+        <Button type="button" onClick={onApproveAll} variant="outline">
           Allow all edits
           <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs"></kbd>
           <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">
@@ -88,8 +86,8 @@ export function ToolApprovalBar({
           </kbd>
         </Button>
 
-        <Button type="button" onClick={onDecline} variant="outline" size="sm">
-          <span className="text-sm">Decline</span>
+        <Button type="button" onClick={onDecline} variant="outline">
+          Decline
           <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">
             ESC
           </kbd>

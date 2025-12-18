@@ -321,13 +321,13 @@ export default function Chat({ spreadsheetService, environment }: ChatProps) {
               value={model}
               onValueChange={(val) => setModel(val as Model)}
             >
-              <SelectTrigger className="w-[180px] border-none shadow-none hover:bg-accent hover:text-accent-foreground">
-                <Anthropic className="size-4 fill-[#D97757]" />
+              <SelectTrigger className="border-none shadow-none hover:bg-accent hover:text-accent-foreground">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {models.map((m) => (
                   <SelectItem key={m.value} value={m.value}>
+                    <Anthropic className="size-4 fill-[#D97757]" />
                     {m.name}
                   </SelectItem>
                 ))}
@@ -353,7 +353,7 @@ export default function Chat({ spreadsheetService, environment }: ChatProps) {
                   Configure your API key to use the chat.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
+              <div className="space-y-2 py-2">
                 <div className="space-y-2">
                   <label htmlFor="api-key" className="font-medium text-sm">
                     Anthropic API Key
@@ -538,6 +538,11 @@ export default function Chat({ spreadsheetService, environment }: ChatProps) {
                             return (
                               <ToolApprovalBar
                                 key={`${message.id}-${partIdx}-${part.state}`}
+                                explanation={
+                                  "explanation" in part.input
+                                    ? part.input.explanation
+                                    : ""
+                                }
                                 toolName={toolName}
                                 onDecline={() => {
                                   addToolApprovalResponse({

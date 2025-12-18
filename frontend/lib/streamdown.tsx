@@ -194,17 +194,17 @@ const defaultComponents: Components = {
     </a>
   ),
   h1: ({ className, children, ...p }) => (
-    <h1 className={cn("mt-6 mb-2 font-semibold text-3xl", className)} {...p}>
+    <h1 className={cn("mt-6 mb-2 font-bold text-lg", className)} {...p}>
       {children}
     </h1>
   ),
   h2: ({ className, children, ...p }) => (
-    <h2 className={cn("mt-6 mb-2 font-semibold text-2xl", className)} {...p}>
+    <h2 className={cn("mt-6 mb-2 font-semibold text-lg", className)} {...p}>
       {children}
     </h2>
   ),
   h3: ({ className, children, ...p }) => (
-    <h3 className={cn("mt-6 mb-2 font-semibold text-xl", className)} {...p}>
+    <h3 className={cn("mt-6 mb-2 font-semibold text-lg", className)} {...p}>
       {children}
     </h3>
   ),
@@ -395,7 +395,7 @@ export const Streamdown = memo(
     if (mode === "static") {
       return (
         <StreamdownContext.Provider value={ctx}>
-          <div className={cn("space-y-4 *:first:mt-0 *:last:mb-0", className)}>
+          <div className={cn("space-y-2 *:first:mt-0 *:last:mb-0", className)}>
             <Markdown
               components={merged}
               rehypePlugins={rehypePlugins}
