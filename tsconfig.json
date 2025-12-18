@@ -28,7 +28,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
-    "types": ["office-js"]
+    "types": ["office-js", "@types/google-apps-script"]
   },
   "exclude": ["dist", "node_modules"],
   "include": ["**/*.ts", "**/*.tsx", "**/*.json", "**/*.md"]

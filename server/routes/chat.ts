@@ -1,4 +1,8 @@
-import { createAgentUIStreamResponse, smoothStream } from "ai";
+import {
+  createAgentUIStream as createAgentUIStreamBase,
+  createUIMessageStreamResponse,
+  smoothStream,
+} from "ai";
 import type * as z from "zod";
 import {
   SpreadsheetAgent,
@@ -10,17 +14,15 @@ import type {
 } from "@/server/ai/schema";
 import type { tools } from "@/server/ai/tools";
 
-async function POST(req: Request) {
-  const body = (await req.json()) as {
+export function createAgentUIStream({
+  body,
+}: {
+  body: {
     messages: SpreadsheetAgentUIMessage[];
     options: z.infer<typeof callOptionsSchema>;
   };
-
-  if (!body.options.anthropicApiKey) {
-    return new Response("API key is required", { status: 400 });
-  }
-
-  return createAgentUIStreamResponse<
+}) {
+  return createAgentUIStreamBase<
     z.infer<typeof callOptionsSchema>,
     typeof tools,
     never,
@@ -37,6 +39,20 @@ async function POST(req: Request) {
       }
     },
   });
+}
+
+async function POST(req: Request) {
+  const body = (await req.json()) as {
+    messages: SpreadsheetAgentUIMessage[];
+    options: z.infer<typeof callOptionsSchema>;
+  };
+
+  if (!body.options.anthropicApiKey) {
+    return new Response("API key is required", { status: 400 });
+  }
+
+  const stream = await createAgentUIStream({ body });
+  return createUIMessageStreamResponse({ stream });
 }
 
 export function chatRoute(req: Request) {

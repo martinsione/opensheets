@@ -1,24 +1,20 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import type { SpreadsheetService } from "@/spreadsheet-service";
+import { excelService } from "@/spreadsheet-service/excel";
 import App from "./App";
 import "./index.css";
 
-function renderApp() {
+function renderApp(spreadsheetService: SpreadsheetService) {
   const container = document.getElementById("root");
   if (container) {
     const root = createRoot(container);
     root.render(
       <React.StrictMode>
-        <App />
+        <App spreadsheetService={spreadsheetService} environment="excel" />
       </React.StrictMode>,
     );
   }
 }
 
-Office.onReady((info) => {
-  if (info.host === Office.HostType.Excel) {
-    renderApp();
-  } else {
-    renderApp();
-  }
-});
+renderApp(excelService);

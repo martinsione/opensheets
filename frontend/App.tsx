@@ -3,7 +3,6 @@
 import { useChat } from "@ai-sdk/react";
 import {
   type ChatOnToolCallCallback,
-  DefaultChatTransport,
   lastAssistantMessageIsCompleteWithToolCalls,
 } from "ai";
 import {
@@ -14,20 +13,8 @@ import {
   RefreshCcwIcon,
   SettingsIcon,
 } from "lucide-react";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useState } from "react";
 import type * as z from "zod";
-import {
-  Context,
-  ContextCacheUsage,
-  ContextContent,
-  ContextContentBody,
-  ContextContentFooter,
-  ContextContentHeader,
-  ContextInputUsage,
-  ContextOutputUsage,
-  ContextReasoningUsage,
-  ContextTrigger,
-} from "@/frontend/components/ai-elements/context";
 import {
   Conversation,
   ConversationContent,
@@ -104,7 +91,8 @@ import {
   models,
 } from "@/server/ai/schema";
 import { type tools, writeTools } from "@/server/ai/tools";
-import * as spreadsheetService from "@/spreadsheet-service/excel";
+import { createAgentUIStream } from "@/server/routes/chat";
+import type { SpreadsheetService } from "@/spreadsheet-service";
 
 type CallOptionsSchema = z.infer<typeof callOptionsSchema>;
 type Model = CallOptionsSchema["model"];
@@ -131,7 +119,12 @@ function isWriteTool(toolName: keyof typeof tools) {
   return writeTools.includes(toolName as (typeof writeTools)[number]);
 }
 
-export default function Chat() {
+interface ChatProps {
+  spreadsheetService: SpreadsheetService;
+  environment: z.infer<typeof callOptionsSchema>["environment"];
+}
+
+export default function Chat({ spreadsheetService, environment }: ChatProps) {
   const [input, setInput] = useState("");
   const [model, setModel] = useLocalStorage<Model>("model", models[0].value);
   const [anthropicApiKey, setAnthropicApiKey] = useLocalStorage(
@@ -151,20 +144,38 @@ export default function Chat() {
     addToolApprovalResponse,
   } = useChat<SpreadsheetAgentUIMessage>({
     messageMetadataSchema,
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-      prepareSendMessagesRequest: async ({ id, messages }) => ({
-        body: {
-          id,
-          messages,
-          options: {
-            anthropicApiKey,
-            model,
-            sheets: await spreadsheetService.getSheets(),
-          } satisfies CallOptionsSchema,
-        },
-      }),
-    }),
+    transport: {
+      async reconnectToStream(_options) {
+        throw new Error("Not implemented");
+      },
+      async sendMessages(options) {
+        return createAgentUIStream({
+          body: {
+            messages: options.messages,
+            options: {
+              anthropicApiKey,
+              environment,
+              model,
+              sheets: await spreadsheetService.getSheets(),
+            } satisfies CallOptionsSchema,
+          },
+        });
+      },
+    },
+    // transport: new DefaultChatTransport({
+    //   api: "/api/chat",
+    //   prepareSendMessagesRequest: async ({ id, messages }) => ({
+    //     body: {
+    //       id,
+    //       messages,
+    //       options: {
+    //         anthropicApiKey,
+    //         model,
+    //         sheets: await spreadsheetService.getSheets(),
+    //       } satisfies CallOptionsSchema,
+    //     },
+    //   }),
+    // }),
     onToolCall: async ({ toolCall }) => {
       if (toolCall.dynamic) return;
 
@@ -210,24 +221,6 @@ export default function Chat() {
     },
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
-
-  const context = useMemo(() => {
-    const lastMessage = messages.at(-1);
-    if (!lastMessage) return null;
-    const { metadata } = lastMessage;
-
-    return {
-      maxTokens: 200_000,
-      modelId: lastMessage.metadata?.model ?? undefined,
-      usage: {
-        inputTokens: metadata?.inputTokens ?? 0,
-        outputTokens: metadata?.outputTokens ?? 0,
-        reasoningTokens: metadata?.reasoningTokens ?? 0,
-        cachedInputTokens: metadata?.cachedInputTokens ?? 0,
-      },
-      usedTokens: metadata?.totalTokens ?? 0,
-    };
-  }, [messages]);
 
   function executeTool(
     toolCall: DistributiveOmit<
@@ -311,7 +304,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="relative mx-auto size-full h-screen max-w-4xl">
+    <div className="relative mx-auto size-full h-screen">
       <div className="flex h-full flex-col">
         <header className="flex items-center justify-between border-b px-4 py-2">
           <div className="flex items-center gap-2">
@@ -616,26 +609,6 @@ export default function Chat() {
                   ))}
                 </PromptInputSelectContent>
               </PromptInputSelect>
-              {context && (
-                <Context
-                  maxTokens={context.maxTokens}
-                  modelId={context.modelId}
-                  usage={context.usage}
-                  usedTokens={context.usedTokens}
-                >
-                  <ContextTrigger />
-                  <ContextContent>
-                    <ContextContentHeader />
-                    <ContextContentBody>
-                      <ContextInputUsage />
-                      <ContextOutputUsage />
-                      <ContextReasoningUsage />
-                      <ContextCacheUsage />
-                    </ContextContentBody>
-                    <ContextContentFooter />
-                  </ContextContent>
-                </Context>
-              )}
             </PromptInputTools>
             <PromptInputSubmit disabled={!input && !status} status={status} />
           </PromptInputFooter>

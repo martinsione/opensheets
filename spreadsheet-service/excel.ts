@@ -1,6 +1,6 @@
 import type { InferToolInput, InferToolOutput } from "ai";
 import type { tools } from "@/server/ai/tools";
-import type { Sheet } from "@/spreadsheet-service";
+import type { Sheet, SpreadsheetService } from "@/spreadsheet-service";
 
 export async function getSheets(): Promise<Sheet[]> {
   return await Excel.run(async (context) => {
@@ -1500,3 +1500,21 @@ export async function selectRange(input: {
     await context.sync();
   });
 }
+
+// Default export conforming to SpreadsheetService interface
+export const excelService: SpreadsheetService = {
+  getSheets,
+  getCellRanges,
+  searchData,
+  getAllObjects,
+  setCellRange,
+  copyTo,
+  clearCellRange,
+  resizeRange,
+  modifySheetStructure,
+  modifyWorkbookStructure,
+  modifyObject,
+  activateSheet,
+  clearSelection,
+  selectRange,
+};

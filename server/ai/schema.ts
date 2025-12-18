@@ -18,6 +18,7 @@ export const callOptionsSchema = z.object({
   anthropicApiKey: z.string(),
   model: modelSchema.default("anthropic:claude-opus-4-5"),
   sheets: z.array(Sheet),
+  environment: z.enum(["excel", "google-sheets"]),
 });
 
 export const messageMetadataSchema = z.object({

@@ -10,7 +10,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { type BundledLanguage, codeToHtml, type ShikiTransformer } from "shiki";
+import type { BundledLanguage, ShikiTransformer } from "shiki";
+import { createHighlighterCore } from "shiki/core";
+import { createOnigurumaEngine } from "shiki/engine/oniguruma";
 import { Button } from "@/frontend/components/ui/button";
 import { cn } from "@/frontend/lib/utils";
 
@@ -58,13 +60,32 @@ export async function highlightCode(
     ? [lineNumberTransformer]
     : [];
 
+  const highlighter = await createHighlighterCore({
+    themes: [
+      import("@shikijs/themes/one-dark-pro"),
+      import("@shikijs/themes/one-light"),
+    ],
+    langs: [
+      import("@shikijs/langs/bash"),
+      import("@shikijs/langs/javascript"),
+      import("@shikijs/langs/json"),
+      import("@shikijs/langs/markdown"),
+      import("@shikijs/langs/md"),
+      import("@shikijs/langs/mdx"),
+      import("@shikijs/langs/python"),
+      import("@shikijs/langs/sql"),
+    ],
+    // `shiki/wasm` contains the wasm binary inlined as base64 string.
+    engine: createOnigurumaEngine(import("shiki/wasm")),
+  });
+
   return await Promise.all([
-    codeToHtml(code, {
+    highlighter.codeToHtml(code, {
       lang: language,
       theme: "one-light",
       transformers,
     }),
-    codeToHtml(code, {
+    highlighter.codeToHtml(code, {
       lang: language,
       theme: "one-dark-pro",
       transformers,

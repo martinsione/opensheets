@@ -30,21 +30,26 @@ export const SpreadsheetAgent = new ToolLoopAgent({
     const anthropic = createAnthropic({ apiKey: options.anthropicApiKey });
     const wrappedModel = wrapLanguageModel({
       model: anthropic(options.model.replace("anthropic:", "")),
-      middleware: devToolsMiddleware(),
+      middleware: [
+        //
+        // devToolsMiddleware(), // <- needs to be removed for build
+      ],
     });
 
     return {
       ...initialOptions,
       model: wrappedModel,
-      system: getSystemPrompt(options.sheets, "excel"),
+      system: getSystemPrompt(options.sheets, options.environment),
       providerOptions: {
         anthropic: {
+          cacheControl: { type: "ephemeral" },
           thinking: { type: "enabled", budgetTokens: 16000 },
         } satisfies AnthropicProviderOptions,
       },
       headers: {
         "anthropic-beta":
           "interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
+        "anthropic-dangerous-direct-browser-access": "true", // Needed to run directly in the browser
       },
     };
   },

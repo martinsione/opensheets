@@ -3,132 +3,195 @@ import fs from "node:fs";
 import path from "node:path";
 import tailwindPlugin from "bun-plugin-tailwind";
 
-function toCamelCase(str: string): string {
-  // @ts-expect-error - Fix later
-  return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+const ROOT = import.meta.dirname;
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function clean(dir: string) {
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir, { recursive: true });
 }
 
-function parseValue(value: string): boolean | number | string | string[] {
-  if (value === "true") return true;
-  if (value === "false") return false;
-
-  if (/^\d+$/.test(value)) return parseInt(value, 10);
-  if (/^\d*\.\d+$/.test(value)) return parseFloat(value);
-
-  if (value.includes(",")) return value.split(",").map((v) => v.trim());
-
-  return value;
+function printSummary(dir: string) {
+  console.log("\n  📊 Output:");
+  for (const file of fs.readdirSync(dir)) {
+    const size = (fs.statSync(path.join(dir, file)).size / 1024).toFixed(2);
+    console.log(`     ${file}: ${size} KB`);
+  }
 }
 
-function parseArgs(): Partial<Bun.BuildConfig> {
-  const config: Partial<Bun.BuildConfig> = {};
-  const args = process.argv.slice(2);
+/** Inline JS and CSS into HTML (required for Google Apps Script) */
+async function inlineAssets(
+  htmlPath: string,
+  outputs: Bun.BuildArtifact[],
+): Promise<string> {
+  let html = await Bun.file(htmlPath).text();
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (arg === undefined) continue;
-    if (!arg.startsWith("--")) continue;
+  for (const output of outputs) {
+    const name = path.basename(output.path);
+    let content = await Bun.file(output.path).text();
 
-    if (arg.startsWith("--no-")) {
-      const key = toCamelCase(arg.slice(5));
-      // @ts-expect-error - Fix later
-      config[key] = false;
-      continue;
+    if (name.endsWith(".js")) {
+      // Escape </script> to prevent breaking HTML
+      content = content.replaceAll("</script>", "<\\/script>");
+      const regex = new RegExp(
+        `<script[^>]*src=["']\\./` +
+          name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+          `["'][^>]*></script>`,
+        "g",
+      );
+      html = html.replace(
+        regex,
+        () => `<script type="module">${content}</script>`,
+      );
+    } else if (name.endsWith(".css")) {
+      const regex = new RegExp(
+        `<link[^>]*href=["']\\./` +
+          name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+          `["'][^>]*/?>`,
+        "g",
+      );
+      html = html.replace(regex, `<style>${content}</style>`);
     }
 
-    if (
-      !arg.includes("=") &&
-      (i === args.length - 1 || args[i + 1]?.startsWith("--"))
-    ) {
-      const key = toCamelCase(arg.slice(2));
-      // @ts-expect-error - Fix later
-      config[key] = true;
-      continue;
-    }
-
-    let key: string;
-    let value: string;
-
-    if (arg.includes("=")) {
-      [key, value] = arg.slice(2).split("=", 2) as [string, string];
-    } else {
-      key = arg.slice(2);
-      value = args[++i] ?? "";
-    }
-
-    key = toCamelCase(key);
-
-    if (key.includes(".")) {
-      const [parentKey, childKey] = key.split(".");
-      // @ts-expect-error - Fix later
-      config[parentKey] = config[parentKey] || {};
-      // @ts-expect-error - Fix later
-      config[parentKey][childKey] = parseValue(value);
-    } else {
-      // @ts-expect-error - Fix later
-      config[key] = parseValue(value);
-    }
+    fs.unlinkSync(output.path);
   }
 
-  return config;
+  return html;
 }
 
-function formatFileSize(bytes: number): string {
-  const units = ["B", "KB", "MB", "GB"];
-  let size = bytes;
-  let unitIndex = 0;
+/** Transform Bun IIFE to Google Apps Script format with stub functions */
+async function transformForAppsScript(
+  codePath: string,
+  sourceEntry: string,
+): Promise<string> {
+  let code = await Bun.file(codePath).text();
+  const source = await Bun.file(sourceEntry).text();
 
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
+  // Extract exported function names
+  const exports = [
+    ...source.matchAll(/export\s+(?:async\s+)?function\s+(\w+)/g),
+    ...source.matchAll(/export\s+const\s+(\w+)/g),
+  ].map((m) => m[1]);
 
-  return `${size.toFixed(2)} ${units[unitIndex]}`;
+  const assignments = exports.map((n) => `  exports.${n} = ${n};`).join("\n");
+  const stubs = exports.map((n) => `function ${n}() {};`).join("\n");
+
+  // Transform IIFE wrapper
+  code = code
+    .replace(/^\(\(\)\s*=>\s*\{/, '(function(exports) {\n  "use strict";')
+    .replace(/\}\)\(\);?\s*$/, "");
+
+  return `${code}
+${assignments}
+  Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
+})(this.globalThis = this.globalThis || {});
+${stubs}
+`;
 }
 
-async function build(cliConfig: Partial<Bun.BuildConfig>) {
-  const entrypoints = [...new Bun.Glob("frontend/**/*.html").scanSync()]
-    .map((filePath) => path.resolve(filePath))
-    .filter((filePath) => !filePath.includes("node_modules"));
+// ============================================================================
+// Builds
+// ============================================================================
 
-  const result = await Bun.build({
-    entrypoints,
-    outdir,
-    plugins: [tailwindPlugin],
+async function buildGoogleSheets() {
+  console.log("\n📱 Building Google Sheets...\n");
+
+  const outDir = path.join(ROOT, "dist/google-sheets");
+  const serverEntry = path.join(ROOT, "spreadsheet-service/google-sheets.ts");
+  clean(outDir);
+
+  // Frontend
+  console.log("  📦 Building frontend...");
+  const frontend = await Bun.build({
+    entrypoints: [path.join(ROOT, "frontend/index.sheets.html")],
+    outdir: outDir,
     minify: true,
     target: "browser",
-    sourcemap: "linked",
-    define: {
-      "process.env.NODE_ENV": JSON.stringify("production"),
-    },
-    ...cliConfig,
+    plugins: [tailwindPlugin],
+    external: ["effect"], // Optional dep from @ai-sdk/provider-utils
+    define: { "process.env.NODE_ENV": '"production"' },
   });
 
-  return result.outputs.map((output) => ({
-    File: path.relative(process.cwd(), output.path),
-    Type: output.kind,
-    Size: formatFileSize(output.size),
-  }));
+  if (!frontend.success) throw new Error("Frontend build failed");
+
+  const htmlOutput = frontend.outputs.find((o) => o.path.endsWith(".html"))!;
+  const assets = frontend.outputs.filter((o) => !o.path.endsWith(".html"));
+  const html = await inlineAssets(htmlOutput.path, assets);
+  await Bun.write(path.join(outDir, "index.html"), html);
+  if (htmlOutput.path !== path.join(outDir, "index.html"))
+    fs.unlinkSync(htmlOutput.path);
+  console.log("  ✅ Frontend built: index.html");
+
+  // Server (code.js)
+  console.log("  📦 Building server code...");
+  const server = await Bun.build({
+    entrypoints: [serverEntry],
+    outdir: outDir,
+    minify: false,
+    target: "browser",
+    format: "iife",
+    naming: "code.js",
+    define: { "process.env.NODE_ENV": '"production"' },
+  });
+
+  if (!server.success) throw new Error("Server build failed");
+
+  const codeOutput = server.outputs.find((o) => o.path.endsWith(".js"))!;
+  const code = await transformForAppsScript(codeOutput.path, serverEntry);
+  await Bun.write(path.join(outDir, "code.js"), code);
+  console.log("  ✅ Server built: code.js");
+
+  // Copy manifest
+  await Bun.write(
+    path.join(outDir, "appsscript.json"),
+    Bun.file(path.join(ROOT, "appsscript.json")),
+  );
+  console.log("  ✅ Copied appsscript.json");
+
+  printSummary(outDir);
 }
 
-if (process.argv.includes("--help") || process.argv.includes("-h")) {
-  console.log(await Bun.$`bun build --help`);
-  process.exit(0);
+async function buildExcel() {
+  console.log("\n📊 Building Excel...\n");
+
+  const outDir = path.join(ROOT, "dist/excel");
+  clean(outDir);
+
+  console.log("  📦 Building frontend...");
+  const result = await Bun.build({
+    entrypoints: [path.join(ROOT, "frontend/index.excel.html")],
+    outdir: outDir,
+    minify: true,
+    target: "browser",
+    plugins: [tailwindPlugin],
+    sourcemap: "linked",
+    external: ["effect"], // Optional dep from @ai-sdk/provider-utils
+    define: { "process.env.NODE_ENV": '"production"' },
+  });
+
+  if (!result.success) throw new Error("Build failed");
+
+  // Rename to index.html
+  const htmlOutput = result.outputs.find((o) => o.path.endsWith(".html"));
+  if (htmlOutput && !htmlOutput.path.endsWith("index.html")) {
+    fs.renameSync(htmlOutput.path, path.join(outDir, "index.html"));
+  }
+
+  console.log("  ✅ Frontend built");
+  printSummary(outDir);
 }
 
-console.log("🚀 Starting build process...");
+// ============================================================================
+// Main
+// ============================================================================
 
-const cliConfig = parseArgs();
-const outdir = cliConfig.outdir || path.join(process.cwd(), "dist");
-
-if (fs.existsSync(outdir)) {
-  console.log(`🗑️ Cleaning previous build at ${outdir}`);
-  fs.rmSync(outdir, { recursive: true, force: false });
-}
-
+console.log("🚀 Starting build...");
 const start = performance.now();
-const output = await build(cliConfig);
-const end = performance.now();
 
-console.table(output);
-console.log(`✅ Build completed in ${(end - start).toFixed(2)}ms`);
+await buildGoogleSheets();
+await buildExcel();
+
+console.log(`\n🎉 Done in ${(performance.now() - start).toFixed(0)}ms`);

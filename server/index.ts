@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { serve } from "bun";
-import html from "@/frontend/index.html";
+import html from "@/frontend/index.excel.html";
 import { chatRoute } from "@/server/routes/chat";
 
 // Load certificates

@@ -1,4 +1,6 @@
+import type z from "zod";
 import type { Sheet } from "@/spreadsheet-service";
+import type { callOptionsSchema } from "./schema";
 
 function sanitizeString(input: string, maxLength = 100) {
   if (!input || typeof input !== "string") {
@@ -481,7 +483,7 @@ Use citations when:
 
 export const getSystemPrompt = (
   sheets: Sheet[],
-  product: "excel" | "google-sheets",
+  product: z.infer<typeof callOptionsSchema>["environment"],
   prompt = systemPromptTemplate,
 ) => {
   return prompt
