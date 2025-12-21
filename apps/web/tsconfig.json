@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@repo/core": ["../../packages/core/src"],
+      "@repo/core/*": ["../../packages/core/src/*"]
     }
   },
   "include": [

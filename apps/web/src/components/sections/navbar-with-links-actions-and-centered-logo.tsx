@@ -47,17 +47,9 @@ export function NavbarLogo({
   href,
   ...props
 }: { href: string } & Omit<ComponentProps<"a">, "href">) {
-  if (href.startsWith("http")) {
-    return (
-      <a
-        {...props}
-        href={href}
-        className={clsx("inline-flex items-stretch", className)}
-      />
-    );
-  }
+  const Comp = href.startsWith("http") ? "a" : Link;
   return (
-    <Link
+    <Comp
       {...props}
       href={href}
       className={clsx("inline-flex items-stretch", className)}

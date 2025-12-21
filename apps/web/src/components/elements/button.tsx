@@ -1,4 +1,5 @@
 import { clsx } from "clsx/lite";
+import Link from "next/link";
 import type { ComponentProps } from "react";
 
 const sizes = {
@@ -44,8 +45,9 @@ export function ButtonLink({
   size?: keyof typeof sizes;
   color?: "dark/light" | "light";
 } & Omit<ComponentProps<"a">, "href">) {
+  const Comp = href.startsWith("http") ? "a" : Link;
   return (
-    <a
+    <Comp
       href={href}
       className={clsx(
         "inline-flex shrink-0 items-center justify-center gap-1 rounded-full font-medium text-sm/7",

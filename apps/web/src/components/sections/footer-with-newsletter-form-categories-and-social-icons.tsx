@@ -25,15 +25,11 @@ export function FooterLink({
   className,
   ...props
 }: { href: string } & Omit<ComponentProps<"a">, "href">) {
-  const link = href.startsWith("http") ? (
-    <a href={href} {...props} />
-  ) : (
-    <Link href={href} {...props} />
-  );
+  const Comp = href.startsWith("http") ? "a" : Link;
 
   return (
     <li className={clsx("text-olive-700 dark:text-olive-400", className)}>
-      {link}
+      <Comp href={href} {...props} />
     </li>
   );
 }

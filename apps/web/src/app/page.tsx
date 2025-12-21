@@ -46,8 +46,8 @@ export default function Page() {
           }
           cta={
             <div className="flex items-center gap-4">
-              <ButtonLink href="#" size="lg">
-                Install on Google Sheets
+              <ButtonLink href="/workbook" size="lg">
+                Try it now
               </ButtonLink>
 
               <PlainButtonLink

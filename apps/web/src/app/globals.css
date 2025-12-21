@@ -1,6 +1,7 @@
-@import "tailwindcss";
+@import "@repo/core/styles.css";
+@source "../../../../packages/core/src/ui";
 
-@theme {
+@theme inline {
   --font-display: "Instrument Serif", serif;
   --font-sans: "Inter", system-ui, sans-serif;
 
@@ -24,9 +25,5 @@
     background-color: var(--color-olive-100);
     --scroll-padding-top: 0;
     scroll-padding-top: var(--scroll-padding-top);
-
-    @variant dark {
-      background-color: var(--color-olive-950);
-    }
   }
 }

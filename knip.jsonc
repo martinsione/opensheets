@@ -2,16 +2,11 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "exclude": ["exports", "types"],
   "workspaces": {
-    "apps/addins": {
-      "entry": [
-        "frontend/index.sheets.tsx",
-        "frontend/index.excel.tsx",
-        "spreadsheet-service/google-sheets.ts", // Google Sheets functions entrypoint
-        "server/index.ts"
-      ],
-      "ignoreDependencies": [
-        "vscode-jsonrpc" // neeeded for streamdown https://github.com/vercel/streamdown/issues/182
-      ]
+    "apps/excel": {
+      "entry": ["frontend/index.tsx", "dev-server.ts"]
+    },
+    "apps/google-sheets": {
+      "entry": ["frontend/index.tsx", "spreadsheet-service.ts"]
     },
     "apps/web": {
       "entry": ["src/app/{page,layout}.tsx"]
