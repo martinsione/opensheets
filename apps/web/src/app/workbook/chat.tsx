@@ -91,7 +91,7 @@ import {
   RefreshCcwIcon,
   SettingsIcon,
 } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import type * as z from "zod";
 
 type CallOptionsSchema = z.infer<typeof callOptionsSchema>;
@@ -133,8 +133,16 @@ export function Chat({ spreadsheetService }: ChatProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editMode, setEditMode] = useState<"ask" | "auto">(EDIT_MODES[0].value);
 
+  // Update ref synchronously during render to avoid stale closures in transport
+  const anthropicApiKeyRef = useRef(anthropicApiKey);
+  anthropicApiKeyRef.current = anthropicApiKey;
+
+  // Dialog is open if user explicitly opened it OR if no API key is set
+  const isDialogOpen = settingsOpen || !anthropicApiKey;
+
   const {
     messages,
+    setMessages,
     sendMessage,
     status,
     regenerate,
@@ -151,7 +159,7 @@ export function Chat({ spreadsheetService }: ChatProps) {
           body: {
             messages: options.messages,
             options: {
-              anthropicApiKey,
+              anthropicApiKey: anthropicApiKeyRef.current,
               environment: "web",
               model,
               sheets: await spreadsheetService.getSheets(),
@@ -291,7 +299,9 @@ export function Chat({ spreadsheetService }: ChatProps) {
               variant="ghost"
               size="icon"
               onClick={() => {
-                window.location.reload();
+                setMessages([]);
+                setInput("");
+                setEditMode(EDIT_MODES[0].value);
               }}
             >
               <PlusIcon className="size-4" />
@@ -314,10 +324,15 @@ export function Chat({ spreadsheetService }: ChatProps) {
             </Select>
           </div>
           <Dialog
-            open={settingsOpen}
+            open={isDialogOpen}
             onOpenChange={(open) => {
               if (open) setApiKeyInput(anthropicApiKey);
-              setSettingsOpen(open);
+              // Only allow closing if there's an API key
+              if (!open && anthropicApiKey) {
+                setSettingsOpen(false);
+              } else if (open) {
+                setSettingsOpen(true);
+              }
             }}
           >
             <DialogTrigger asChild>
