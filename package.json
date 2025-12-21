@@ -2,9 +2,11 @@
   "name": "opensheets",
   "private": true,
   "packageManager": "bun@1.3.5",
-  "workspaces": [
-    "apps/*"
-  ],
+  "workspaces": {
+    "packages": [
+      "apps/*"
+    ]
+  },
   "scripts": {
     "prepare": "git config --local core.hooksPath .githooks",
     "clean": "turbo clean",

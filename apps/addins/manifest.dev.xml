@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="TaskPaneApp">
-  <Id>ff664994-9805-497d-9cfa-36d55ee072fd</Id>
+  <Id>4514135e-db97-4473-a783-ab958b9c14d8</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>OpenSheets</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
@@ -68,8 +68,8 @@
       </bt:Images>
       <bt:Urls>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://opensheets.app"/>
-        <bt:Url id="Commands.Url" DefaultValue="https://opensheets.app/assets/excel/commands.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://opensheets.app/assets/excel/taskpane.html"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://localhost:8888/commands.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:8888/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Get started with OpenSheets!"/>

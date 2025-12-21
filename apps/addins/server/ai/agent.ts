@@ -2,7 +2,6 @@ import {
   type AnthropicProviderOptions,
   createAnthropic,
 } from "@ai-sdk/anthropic";
-import { devToolsMiddleware } from "@ai-sdk/devtools";
 import type { InferAgentUIMessage } from "ai";
 import { ToolLoopAgent, wrapLanguageModel } from "ai";
 import type * as z from "zod";
@@ -30,10 +29,7 @@ export const SpreadsheetAgent = new ToolLoopAgent({
     const anthropic = createAnthropic({ apiKey: options.anthropicApiKey });
     const wrappedModel = wrapLanguageModel({
       model: anthropic(options.model.replace("anthropic:", "")),
-      middleware: [
-        //
-        // devToolsMiddleware(), // <- needs to be removed for build
-      ],
+      middleware: [],
     });
 
     return {
