@@ -1,5 +1,6 @@
 import { ElDialog, ElDialogPanel } from "@tailwindplus/elements/react";
 import { clsx } from "clsx/lite";
+import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
 export function NavbarLink({
@@ -46,10 +47,19 @@ export function NavbarLogo({
   href,
   ...props
 }: { href: string } & Omit<ComponentProps<"a">, "href">) {
+  if (href.startsWith("http")) {
+    return (
+      <a
+        {...props}
+        href={href}
+        className={clsx("inline-flex items-stretch", className)}
+      />
+    );
+  }
   return (
-    <a
-      href={href}
+    <Link
       {...props}
+      href={href}
       className={clsx("inline-flex items-stretch", className)}
     />
   );

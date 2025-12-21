@@ -1,4 +1,4 @@
-import { ButtonLink, PlainButtonLink } from "@/components/elements/button";
+import Link from "next/link";
 import { Container } from "@/components/elements/container";
 import { Document } from "@/components/elements/document";
 import { Main } from "@/components/elements/main";
@@ -8,14 +8,9 @@ import {
   FooterCategory,
   FooterLink,
   FooterWithNewsletterFormCategoriesAndSocialIcons,
-  NewsletterForm,
   SocialLink,
 } from "@/components/sections/footer-with-newsletter-form-categories-and-social-icons";
-import {
-  NavbarLink,
-  NavbarLogo,
-  NavbarWithLinksActionsAndCenteredLogo,
-} from "@/components/sections/navbar-with-links-actions-and-centered-logo";
+import { NavbarLogo } from "@/components/sections/navbar-with-links-actions-and-centered-logo";
 
 export default function LegalLayout({
   children,
@@ -24,23 +19,11 @@ export default function LegalLayout({
 }) {
   return (
     <>
-      <NavbarWithLinksActionsAndCenteredLogo
-        id="navbar"
-        links={undefined}
-        logo={
-          <NavbarLogo href="/">
-            <p className="font-serif text-2xl">OpenSheets</p>
-          </NavbarLogo>
-        }
-        actions={
-          <>
-            <PlainButtonLink href="#" className="max-sm:hidden">
-              Log in
-            </PlainButtonLink>
-            <ButtonLink href="#">Get started</ButtonLink>
-          </>
-        }
-      />
+      <Container className="pt-12 text-center">
+        <NavbarLogo href="/">
+          <p className="font-serif text-2xl dark:text-white">OpenSheets</p>
+        </NavbarLogo>
+      </Container>
 
       <Main>
         <section className="py-16">
@@ -52,28 +35,9 @@ export default function LegalLayout({
 
       <FooterWithNewsletterFormCategoriesAndSocialIcons
         id="footer"
-        cta={
-          <NewsletterForm
-            headline="Stay in the loop"
-            subheadline={
-              <p>
-                Get product updates and tips delivered straight to your inbox.
-              </p>
-            }
-            action="#"
-          />
-        }
+        cta={<Link href="/">OpenSheets</Link>}
         links={
           <>
-            <FooterCategory title="Product">
-              <FooterLink href="#">Features</FooterLink>
-              <FooterLink href="#">Pricing</FooterLink>
-              <FooterLink href="#">Integrations</FooterLink>
-            </FooterCategory>
-            <FooterCategory title="Company">
-              <FooterLink href="#">About</FooterLink>
-              <FooterLink href="#">Blog</FooterLink>
-            </FooterCategory>
             <FooterCategory title="Resources">
               <FooterLink href="https://github.com/martinsione/opensheets">
                 GitHub

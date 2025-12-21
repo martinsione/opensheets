@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { AnnouncementBadge } from "@/components/elements/announcement-badge";
 import { ButtonLink, PlainButtonLink } from "@/components/elements/button";
+import { Container } from "@/components/elements/container";
 import { Main } from "@/components/elements/main";
 import { Screenshot } from "@/components/elements/screenshot";
 import { ArrowNarrowRightIcon } from "@/components/icons/arrow-narrow-right-icon";
@@ -21,28 +23,18 @@ import { NavbarLogo } from "@/components/sections/navbar-with-links-actions-and-
 export default function Page() {
   return (
     <>
-      {/* <NavbarWithLinksActionsAndCenteredLogo
-        id="navbar"
-        links={undefined}
-        logo={
-          <NavbarLogo href="#">
-            <p className="font-serif text-2xl">OpenSheets</p>
-          </NavbarLogo>
-        }
-        actions={undefined}
-      /> */}
-      <div className="pt-6 pl-6">
-        <NavbarLogo href="#">
-          <p className="font-serif text-2xl">OpenSheets</p>
+      <Container className="pt-12">
+        <NavbarLogo href="/">
+          <p className="font-serif text-2xl dark:text-white">OpenSheets</p>
         </NavbarLogo>
-      </div>
-
+      </Container>
       <Main>
         {/* Hero */}
         <HeroLeftAlignedWithDemo
           id="hero"
           eyebrow={
             <AnnouncementBadge
+              target="_blank"
               href="https://github.com/martinsione/opensheets"
               text="OpenSheets is open source"
               cta="Star on GitHub"
@@ -58,7 +50,11 @@ export default function Page() {
                 Install on Google Sheets
               </ButtonLink>
 
-              <PlainButtonLink href="#" size="lg">
+              <PlainButtonLink
+                target="_blank"
+                href="https://x.com/sionemart/status/2000809819390029977"
+                size="lg"
+              >
                 See how it works <ArrowNarrowRightIcon />
               </PlainButtonLink>
             </div>
@@ -99,7 +95,7 @@ export default function Page() {
 
       <FooterWithNewsletterFormCategoriesAndSocialIcons
         id="footer"
-        cta={undefined}
+        cta={<Link href="/">OpenSheets</Link>}
         links={
           <>
             <FooterCategory title="Resources">
@@ -114,10 +110,11 @@ export default function Page() {
         fineprint="© 2025 Oatmeal, Inc."
         socialLinks={
           <>
-            <SocialLink href="https://x.com/sionemart" name="X">
+            <SocialLink target="_blank" href="https://x.com/sionemart" name="X">
               <XIcon />
             </SocialLink>
             <SocialLink
+              target="_blank"
               href="https://github.com/martinsione/opensheets"
               name="GitHub"
             >

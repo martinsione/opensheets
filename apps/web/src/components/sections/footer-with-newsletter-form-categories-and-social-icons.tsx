@@ -1,4 +1,5 @@
 import { clsx } from "clsx/lite";
+import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { Container } from "../elements/container";
 import { ArrowNarrowRightIcon } from "../icons/arrow-narrow-right-icon";
@@ -24,9 +25,15 @@ export function FooterLink({
   className,
   ...props
 }: { href: string } & Omit<ComponentProps<"a">, "href">) {
+  const link = href.startsWith("http") ? (
+    <a href={href} {...props} />
+  ) : (
+    <Link href={href} {...props} />
+  );
+
   return (
     <li className={clsx("text-olive-700 dark:text-olive-400", className)}>
-      <a href={href} {...props} />
+      {link}
     </li>
   );
 }
