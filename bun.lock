@@ -6,6 +6,7 @@
       "name": "opensheets",
       "devDependencies": {
         "@biomejs/biome": "^2.3.10",
+        "@types/hast": "^3.0.4",
         "turbo": "^2.7.0",
       },
     },
