@@ -64,36 +64,20 @@ export default function Page() {
             </div>
           }
           demo={
-            <>
-              <Screenshot
-                className="rounded-md lg:hidden"
-                wallpaper="green"
-                placement="bottom-right"
-              >
-                {/** biome-ignore lint/performance/noImgElement: <> */}
-                <img
-                  src="/screenshot.png"
-                  alt="OpenSheets for Google Sheets"
-                  width={2000}
-                  height={1408}
-                  className="bg-white/75 max-md:hidden dark:hidden"
-                />
-              </Screenshot>
-              <Screenshot
-                className="rounded-lg max-lg:hidden"
-                wallpaper="green"
-                placement="bottom"
-              >
-                {/** biome-ignore lint/performance/noImgElement: <> */}
-                <img
-                  src="/screenshot.png"
-                  alt="OpenSheets for Google Sheets"
-                  className="bg-white/75"
-                  width={3440}
-                  height={1990}
-                />
-              </Screenshot>
-            </>
+            <Screenshot
+              className="rounded-lg"
+              wallpaper="green"
+              placement="bottom"
+            >
+              {/** biome-ignore lint/performance/noImgElement: <> */}
+              <img
+                src="/screenshot.png"
+                alt="OpenSheets for Google Sheets"
+                className="bg-white/75"
+                width={3440}
+                height={1990}
+              />
+            </Screenshot>
           }
           footer={undefined}
         />
