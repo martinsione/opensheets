@@ -68,9 +68,18 @@
         "@mdx-js/react": "^3.1.1",
         "@mescius/spread-excelio": "^19.0.0",
         "@mescius/spread-sheets": "^19.0.0",
+        "@mescius/spread-sheets-barcode": "19.0.0",
         "@mescius/spread-sheets-charts": "^19.0.0",
+        "@mescius/spread-sheets-designer": "19.0.0",
+        "@mescius/spread-sheets-designer-react": "19.0.0",
+        "@mescius/spread-sheets-designer-resources-en": "19.0.0",
+        "@mescius/spread-sheets-io": "19.0.0",
+        "@mescius/spread-sheets-languagepackages": "19.0.0",
+        "@mescius/spread-sheets-pdf": "19.0.0",
         "@mescius/spread-sheets-pivot-addon": "^19.0.0",
+        "@mescius/spread-sheets-print": "19.0.0",
         "@mescius/spread-sheets-react": "^19.0.0",
+        "@mescius/spread-sheets-shapes": "19.0.0",
         "@next/mdx": "^16.1.0",
         "@repo/core": "workspace:*",
         "@tailwindplus/elements": "^1.0.21",
@@ -371,9 +380,25 @@
 
     "@mescius/spread-sheets": ["@mescius/spread-sheets@19.0.0", "", {}, "sha512-P8Na69wyshF0PlihlLCURPPdkP1RfMHlM0JwNdpwV+vCYPLlxaCJTqhXsutXXD7cJ6lSu/Ip73b8+RduFYO+qQ=="],
 
+    "@mescius/spread-sheets-barcode": ["@mescius/spread-sheets-barcode@19.0.0", "", { "dependencies": { "@mescius/spread-sheets": "19.0.0" } }, "sha512-3p6EuUyXCusP97HgoQHt8uMJ8zG0AMUDYhmFpFMIbB3eFJn9FFC5ViSbQ7B608QIqZly8d4dEMb7DYovepa7xQ=="],
+
     "@mescius/spread-sheets-charts": ["@mescius/spread-sheets-charts@19.0.0", "", { "dependencies": { "@mescius/spread-sheets": "19.0.0", "@mescius/spread-sheets-shapes": "19.0.0" } }, "sha512-dTQkuKLnHWzh0/8fzIF5OGEczaAWDjvfkLmZMW8nPAU+IBc+a/LZU8CToqz1mpTNS3miz+4pUroNnYhuAshSHQ=="],
 
+    "@mescius/spread-sheets-designer": ["@mescius/spread-sheets-designer@19.0.0", "", {}, "sha512-5VFr3e6Z+C3/svy1rcgeWfnhTGu14O/pLYaO+waxB3tciJRoJoNANz6gPb+ATkqBAy0a83h/EPn52t4rti19gA=="],
+
+    "@mescius/spread-sheets-designer-react": ["@mescius/spread-sheets-designer-react@19.0.0", "", {}, "sha512-pAbl4GF6GucMfpfoDAHm8wvEz0P1eJwCd7j9Z/ztQdBzpFcOqFAN7wa1CTEH8B2F4XjgnMuorsnjqTqiqQ6KuQ=="],
+
+    "@mescius/spread-sheets-designer-resources-en": ["@mescius/spread-sheets-designer-resources-en@19.0.0", "", {}, "sha512-vGpofmHYDydubrVZf28iLLuTIMZJM2LDmCk0EqfNOMeBy5zdeK7hWE1xLhij+FzNgGlvNAc8khtsKEFGqLAUeA=="],
+
+    "@mescius/spread-sheets-io": ["@mescius/spread-sheets-io@19.0.0", "", { "dependencies": { "@mescius/spread-sheets": "19.0.0" } }, "sha512-SSVNPBxnETxBN6l16u11KgLKICYUvPYmI4og/1kSxSOQWKBuWpbnHDdmXEb+JQN3UnuOz3re4c9+g4VPeIKhPQ=="],
+
+    "@mescius/spread-sheets-languagepackages": ["@mescius/spread-sheets-languagepackages@19.0.0", "", { "dependencies": { "@mescius/spread-sheets": "19.0.0" } }, "sha512-fgvgvmW9btyT0coRopLpnvIIptsAyv5sBWF1pzWfTs9Hc2zqrnQfhDEh4rxNhHfPXL1MHA071qXNBfYyPnQ5Aw=="],
+
+    "@mescius/spread-sheets-pdf": ["@mescius/spread-sheets-pdf@19.0.0", "", { "dependencies": { "@mescius/spread-sheets": "19.0.0", "@mescius/spread-sheets-print": "19.0.0" } }, "sha512-bDkHghmLcifXaANIkPdzmffojZxK3YkBVChaw2MZmINtAeCRdQVwcgDhhDJLrSzzj1Q3H/zfysVzuVqLwBB8Rw=="],
+
     "@mescius/spread-sheets-pivot-addon": ["@mescius/spread-sheets-pivot-addon@19.0.0", "", { "dependencies": { "@mescius/spread-sheets": "19.0.0", "@mescius/spread-sheets-shapes": "19.0.0" } }, "sha512-3FPpaD678pbGUnXXX2CWFOszPGjs1p+K0mOQKu4OA8dJGdrn173QqDGxE+Ca0LGY8dFcInq1UZ4IvJ5icex9IA=="],
+
+    "@mescius/spread-sheets-print": ["@mescius/spread-sheets-print@19.0.0", "", { "dependencies": { "@mescius/spread-sheets": "19.0.0" } }, "sha512-J+2+O22LxI0FwgPoni44aA4CI9HlJdhtIBaKm3PuBY12sIIxMXdwJa+lIURf18XXKm3LuW/wYsnLfYU5x2gc5w=="],
 
     "@mescius/spread-sheets-react": ["@mescius/spread-sheets-react@19.0.0", "", { "dependencies": { "@mescius/spread-sheets": "19.0.0" } }, "sha512-rhcKFWnZaOgGlpSHel6fWEkVcYOGC0C5PrBjgD7fk7XD1Z6he9aptU+ahqt3yt6U6wK/yIErmMoQlABj7riqTg=="],
 

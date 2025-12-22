@@ -1,10 +1,13 @@
 "use client";
 
 import "@mescius/spread-sheets/styles/gc.spread.sheets.excel2016colorful.css";
+import "@mescius/spread-sheets-designer/styles/gc.spread.sheets.designer.min.css";
+import "@mescius/spread-sheets-designer-resources-en";
 import "@mescius/spread-sheets-charts";
 import "@mescius/spread-sheets-pivot-addon";
 import type GC from "@mescius/spread-sheets";
-import { SpreadSheets } from "@mescius/spread-sheets-react";
+import type * as GCDesigner from "@mescius/spread-sheets-designer";
+import { Designer } from "@mescius/spread-sheets-designer-react";
 import { useCallback, useRef } from "react";
 
 export interface SpreadsheetHandle {
@@ -19,8 +22,9 @@ interface SpreadsheetProps {
 export function Spreadsheet({ onInitialized, className }: SpreadsheetProps) {
   const workbookRef = useRef<GC.Spread.Sheets.Workbook | null>(null);
 
-  const handleWorkbookInit = useCallback(
-    (spread: GC.Spread.Sheets.Workbook) => {
+  const handleDesignerInit = useCallback(
+    (designer: GCDesigner.Spread.Sheets.Designer.Designer) => {
+      const spread = designer.getWorkbook() as GC.Spread.Sheets.Workbook;
       workbookRef.current = spread;
 
       spread.options.tabStripVisible = true;
@@ -58,10 +62,10 @@ export function Spreadsheet({ onInitialized, className }: SpreadsheetProps) {
   );
 
   return (
-    <SpreadSheets
-      workbookInitialized={handleWorkbookInit}
-      hostStyle={{ width: "100%", height: "100%" }}
-      hostClass={className}
+    <Designer
+      designerInitialized={handleDesignerInit}
+      styleInfo={{ width: "100%", height: "100%" }}
+      className={className}
     />
   );
 }
