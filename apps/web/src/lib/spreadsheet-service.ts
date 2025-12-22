@@ -128,7 +128,6 @@ export function createWebSpreadsheetService(
 
             if (cell.formula) {
               sheet.setFormula(targetRow, targetCol, cell.formula);
-              // Get computed value
               const computed = sheet.getValue(targetRow, targetCol);
               if (computed !== null && computed !== undefined) {
                 formulaResults[cellAddr] =
@@ -140,7 +139,6 @@ export function createWebSpreadsheetService(
               sheet.setValue(targetRow, targetCol, cell.value);
             }
 
-            // Apply styles
             if (cell.cellStyles) {
               const style = sheet.getStyle(targetRow, targetCol);
               const newStyle = style || {};
@@ -166,14 +164,11 @@ export function createWebSpreadsheetService(
           }
         }
 
-        // Handle copyToRange using copyTo method on sheet
         if (copyToRange) {
           const destInfo = parseRangeAddress(copyToRange);
           if (destInfo) {
-            // SpreadJS copyTo: fromRow, fromCol, toRow, toCol, rowCount, colCount, option
             const rowCount = rangeInfo.endRow - rangeInfo.startRow + 1;
             const colCount = rangeInfo.endCol - rangeInfo.startCol + 1;
-            // Copy values manually since copyTo might not be available in all versions
             for (let r = 0; r < rowCount; r++) {
               for (let c = 0; c < colCount; c++) {
                 const srcRow = rangeInfo.startRow + r;
@@ -198,7 +193,6 @@ export function createWebSpreadsheetService(
           }
         }
 
-        // Handle resizeWidth
         if (resizeWidth) {
           for (let col = rangeInfo.startCol; col <= rangeInfo.endCol; col++) {
             if (resizeWidth.type === "autofit") {
@@ -214,7 +208,6 @@ export function createWebSpreadsheetService(
           }
         }
 
-        // Handle resizeHeight
         if (resizeHeight) {
           for (let row = rangeInfo.startRow; row <= rangeInfo.endRow; row++) {
             if (resizeHeight.type === "autofit") {
@@ -439,7 +432,6 @@ export function createWebSpreadsheetService(
             workbook.addSheet(sheetCount);
             const newSheet = workbook.getSheet(sheetCount);
             newSheet.name(copyName);
-            // Copy content manually
             const usedRange = source.getUsedRange();
             if (usedRange) {
               for (
@@ -523,7 +515,6 @@ export function createWebSpreadsheetService(
       const destInfo = parseRangeAddress(destinationRange);
 
       if (sourceInfo && destInfo) {
-        // Copy values manually
         const rowCount = sourceInfo.endRow - sourceInfo.startRow + 1;
         const colCount = sourceInfo.endCol - sourceInfo.startCol + 1;
         for (let r = 0; r < rowCount; r++) {
@@ -569,7 +560,6 @@ export function createWebSpreadsheetService(
             sheet.setFormula(row, col, "");
           }
           if (clearType === "formats" || clearType === "all") {
-            // Reset style by setting undefined (removes the style)
             sheet.setStyle(
               row,
               col,
@@ -625,7 +615,6 @@ export function createWebSpreadsheetService(
   };
 }
 
-// Helper functions
 function columnToLetter(columnIndex: number): string {
   let letter = "";
   let temp = columnIndex;
@@ -650,7 +639,6 @@ function parseRangeAddress(range: string): {
   endRow: number;
   endCol: number;
 } | null {
-  // Handle formats like A1, A1:B2, A:B, 1:2
   const match = range.match(/^([A-Z]+)?(\d+)?(?::([A-Z]+)?(\d+)?)?$/i);
   if (!match) return null;
 
@@ -662,12 +650,12 @@ function parseRangeAddress(range: string): {
     ? letterToColumn(endColStr.toUpperCase())
     : startColStr
       ? startCol
-      : 25; // Default to Z
+      : 25;
   const endRow = endRowStr
     ? parseInt(endRowStr, 10) - 1
     : startRowStr
       ? startRow
-      : 999; // Default to 1000
+      : 999;
 
   return { startRow, startCol, endRow, endCol };
 }

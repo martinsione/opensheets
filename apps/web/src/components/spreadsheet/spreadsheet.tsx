@@ -17,11 +17,6 @@ const SpreadSheets = dynamic(
   },
 );
 
-const Worksheet = dynamic(
-  () => import("@mescius/spread-sheets-react").then((mod) => mod.Worksheet),
-  { ssr: false },
-);
-
 export interface SpreadsheetHandle {
   getWorkbook: () => GC.Spread.Sheets.Workbook | null;
 }
@@ -33,16 +28,12 @@ interface SpreadsheetProps {
 
 export function Spreadsheet({ onInitialized, className }: SpreadsheetProps) {
   const workbookRef = useRef<GC.Spread.Sheets.Workbook | null>(null);
-  const isInitialized = useRef(false);
   const [isReady, setIsReady] = useState(false);
 
-  // Load CSS and plugins on mount
   useEffect(() => {
-    // Import styles
     import(
       "@mescius/spread-sheets/styles/gc.spread.sheets.excel2016colorful.css"
     );
-    // Import plugins
     Promise.all([
       import("@mescius/spread-sheets-charts"),
       import("@mescius/spread-sheets-pivot-addon"),
@@ -53,13 +44,8 @@ export function Spreadsheet({ onInitialized, className }: SpreadsheetProps) {
 
   const handleWorkbookInit = useCallback(
     (spread: GC.Spread.Sheets.Workbook) => {
-      // Prevent double initialization
-      if (isInitialized.current) return;
-      isInitialized.current = true;
-
       workbookRef.current = spread;
 
-      // Configure workbook defaults
       spread.options.tabStripVisible = true;
       spread.options.allowUserDragDrop = true;
       spread.options.allowUserDragFill = true;
@@ -67,14 +53,31 @@ export function Spreadsheet({ onInitialized, className }: SpreadsheetProps) {
       spread.options.allowContextMenu = true;
       spread.options.allowUserEditFormula = true;
 
-      // Set default sheet options
-      const sheet = spread.getActiveSheet();
-      if (sheet) {
-        sheet.setRowCount(1000);
-        sheet.setColumnCount(26);
-      }
-
-      onInitialized?.(spread);
+      // Wait for sheets to be available before notifying
+      let retries = 0;
+      const waitForReady = () => {
+        if (spread.getSheetCount() > 0) {
+          const sheet = spread.getActiveSheet();
+          if (sheet) {
+            sheet.setRowCount(1000);
+            sheet.setColumnCount(26);
+          }
+          onInitialized?.(spread);
+        } else if (retries++ < 100) {
+          requestAnimationFrame(waitForReady);
+        } else {
+          // Fallback: create a default sheet if SpreadJS didn't
+          spread.addSheet(0);
+          const sheet = spread.getSheet(0);
+          if (sheet) {
+            sheet.name("Sheet1");
+            sheet.setRowCount(1000);
+            sheet.setColumnCount(26);
+          }
+          onInitialized?.(spread);
+        }
+      };
+      requestAnimationFrame(waitForReady);
     },
     [onInitialized],
   );
@@ -95,8 +98,6 @@ export function Spreadsheet({ onInitialized, className }: SpreadsheetProps) {
         height: "100%",
       }}
       hostClass={className}
-    >
-      <Worksheet name="Sheet1" />
-    </SpreadSheets>
+    />
   );
 }
