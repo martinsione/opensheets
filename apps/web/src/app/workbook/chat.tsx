@@ -9,21 +9,19 @@ import {
   models,
 } from "@repo/core/ai/schema";
 import { type tools, writeTools } from "@repo/core/ai/tools";
-import { useLocalStorage } from "@repo/core/lib/utils";
-import type { SpreadsheetService } from "@repo/core/spreadsheet-service";
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from "@repo/core/ui/ai-elements/conversation";
-import { Loader } from "@repo/core/ui/ai-elements/loader";
+} from "@repo/core/components/ai-elements/conversation";
+import { Loader } from "@repo/core/components/ai-elements/loader";
 import {
   Message,
   MessageAction,
   MessageActions,
   MessageContent,
   MessageResponse,
-} from "@repo/core/ui/ai-elements/message";
+} from "@repo/core/components/ai-elements/message";
 import {
   PromptInput,
   PromptInputAttachment,
@@ -40,28 +38,28 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
-} from "@repo/core/ui/ai-elements/prompt-input";
+} from "@repo/core/components/ai-elements/prompt-input";
 import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
-} from "@repo/core/ui/ai-elements/reasoning";
+} from "@repo/core/components/ai-elements/reasoning";
 import {
   Source,
   Sources,
   SourcesContent,
   SourcesTrigger,
-} from "@repo/core/ui/ai-elements/sources";
+} from "@repo/core/components/ai-elements/sources";
 import {
   Tool,
   ToolContent,
   ToolHeader,
   ToolInput,
   ToolOutput,
-} from "@repo/core/ui/ai-elements/tool";
-import { ToolApprovalBar } from "@repo/core/ui/ai-elements/tool-approval-bar";
-import { Anthropic } from "@repo/core/ui/icons/anthropic";
-import { Button } from "@repo/core/ui/ui/button";
+} from "@repo/core/components/ai-elements/tool";
+import { ToolApprovalBar } from "@repo/core/components/ai-elements/tool-approval-bar";
+import { Anthropic } from "@repo/core/components/icons/anthropic";
+import { Button } from "@repo/core/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -70,15 +68,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@repo/core/ui/ui/dialog";
-import { Input } from "@repo/core/ui/ui/input";
+} from "@repo/core/components/ui/dialog";
+import { Input } from "@repo/core/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@repo/core/ui/ui/select";
+} from "@repo/core/components/ui/select";
+import { useLocalStorage } from "@repo/core/lib/utils";
+import type { SpreadsheetService } from "@repo/core/spreadsheet-service";
 import {
   type ChatOnToolCallCallback,
   lastAssistantMessageIsCompleteWithToolCalls,

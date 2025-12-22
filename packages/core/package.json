@@ -3,32 +3,16 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./styles.css": "./src/styles.css",
     "./spreadsheet-service": "./src/spreadsheet-service/index.ts",
-    "./ai/agent": "./src/ai/agent.ts",
-    "./ai/tools": "./src/ai/tools.ts",
-    "./ai/prompt": "./src/ai/prompt.ts",
-    "./ai/schema": "./src/ai/schema.ts",
-    "./ai/chat": "./src/ai/chat.ts",
-    "./lib/utils": "./src/lib/utils.ts",
-    "./ui/ai-elements/conversation": "./src/ui/ai-elements/conversation.tsx",
-    "./ui/ai-elements/loader": "./src/ui/ai-elements/loader.tsx",
-    "./ui/ai-elements/message": "./src/ui/ai-elements/message.tsx",
-    "./ui/ai-elements/prompt-input": "./src/ui/ai-elements/prompt-input.tsx",
-    "./ui/ai-elements/reasoning": "./src/ui/ai-elements/reasoning.tsx",
-    "./ui/ai-elements/sources": "./src/ui/ai-elements/sources.tsx",
-    "./ui/ai-elements/tool": "./src/ui/ai-elements/tool.tsx",
-    "./ui/ai-elements/tool-approval-bar": "./src/ui/ai-elements/tool-approval-bar.tsx",
-    "./ui/icons/anthropic": "./src/ui/icons/anthropic.tsx",
-    "./ui/ui/button": "./src/ui/ui/button.tsx",
-    "./ui/ui/dialog": "./src/ui/ui/dialog.tsx",
-    "./ui/ui/input": "./src/ui/ui/input.tsx",
-    "./ui/ui/select": "./src/ui/ui/select.tsx"
+    "./styles.css": "./src/styles.css",
+    "./ai/*": "./src/ai/*.ts",
+    "./lib/streamdown": "./src/lib/streamdown.tsx",
+    "./lib/*": "./src/lib/*.ts",
+    "./components/*": "./src/components/*.tsx"
   },
   "scripts": {
     "clean": "git clean -xdf -e '.env*'",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.0",
