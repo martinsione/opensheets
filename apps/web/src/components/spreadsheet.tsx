@@ -5,10 +5,19 @@ import "@mescius/spread-sheets-designer/styles/gc.spread.sheets.designer.min.css
 import "@mescius/spread-sheets-designer-resources-en";
 import "@mescius/spread-sheets-charts";
 import "@mescius/spread-sheets-pivot-addon";
-import type GC from "@mescius/spread-sheets";
-import type * as GCDesigner from "@mescius/spread-sheets-designer";
+import GC from "@mescius/spread-sheets";
+import * as GCDesigner from "@mescius/spread-sheets-designer";
 import { Designer } from "@mescius/spread-sheets-designer-react";
 import { useCallback, useRef } from "react";
+
+// Set SpreadJS license keys
+if (process.env.NEXT_PUBLIC_SPREADJS_LICENSE_KEY) {
+  GC.Spread.Sheets.LicenseKey = process.env.NEXT_PUBLIC_SPREADJS_LICENSE_KEY;
+}
+if (process.env.NEXT_PUBLIC_SPREADJS_DESIGNER_LICENSE_KEY) {
+  GCDesigner.Spread.Sheets.Designer.LicenseKey =
+    process.env.NEXT_PUBLIC_SPREADJS_DESIGNER_LICENSE_KEY;
+}
 
 export interface SpreadsheetHandle {
   getWorkbook: () => GC.Spread.Sheets.Workbook | null;
