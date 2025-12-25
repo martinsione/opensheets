@@ -1,12 +1,12 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
-
 export const alt = "OpenSheets - The open source spreadsheet agent";
+
 export const size = {
   width: 1200,
   height: 630,
 };
+
 export const contentType = "image/png";
 
 async function loadGoogleFont(font: string) {
