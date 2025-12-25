@@ -11,7 +11,9 @@ function renderApp(spreadsheetService: SpreadsheetService) {
     const root = createRoot(container);
     root.render(
       <React.StrictMode>
-        <Chat spreadsheetService={spreadsheetService} environment="excel" />
+        <div className="h-screen w-screen overflow-hidden">
+          <Chat spreadsheetService={spreadsheetService} environment="excel" />
+        </div>
       </React.StrictMode>,
     );
   }
