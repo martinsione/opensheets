@@ -2,6 +2,10 @@
 
 The open source AI agent for spreadsheets. Supports Google Sheets and Excel.
 
+<div align="center">
+  <img width="750" height="427" alt="image" src="https://github.com/user-attachments/assets/0593219a-5ee1-4ead-8c10-65b252c5764e" />
+</div>
+
 ## Development
 
 ```bash
