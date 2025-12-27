@@ -107,7 +107,7 @@ export default function Page() {
             </FooterCategory>
           </>
         }
-        fineprint="© 2025 Oatmeal, Inc."
+        fineprint={undefined}
         socialLinks={
           <>
             <SocialLink target="_blank" href="https://x.com/sionemart" name="X">
