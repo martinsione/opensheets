@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: December 20, 2025**
+**Last updated: December 30, 2025**
 
 ## The Short Version
 
@@ -8,18 +8,67 @@ OpenSheets is open source software. We don't collect, store, or sell your data. 
 
 ## Data Collection
 
-**We don't collect any personal data.** OpenSheets runs entirely in your browser and communicates directly with the AI provider you configure. We have no servers that store your information.
+**We don't collect any personal data.** OpenSheets runs entirely in your browser (for the web version) or within Google's Apps Script environment (for the Google Sheets™ add-on). We have no servers that collect or store your information.
 
-### What stays on your device:
+### What stays on your device/session:
 
 - Your spreadsheet data
-- Your API keys
+- Your API keys (stored locally, never transmitted to us)
 - Your conversation history
 - All settings and preferences
 
-### Third-Party Services
+## Data Usage
 
-When you use OpenSheets, your prompts and spreadsheet context are sent to your configured AI provider (e.g., Anthropic, OpenAI). These communications are subject to that provider's privacy policy, not ours.
+OpenSheets accesses the following Google user data:
+
+- **Spreadsheet data**: Cell values, formulas, and formatting are read to provide context to the AI assistant and written to execute user-requested changes.
+- **User email and profile**: Displayed in the sidebar to show which account is active. This information is never stored or transmitted.
+
+**How we use this data:**
+- Spreadsheet data is sent to Anthropic's Claude API (the AI provider) to process your natural language requests
+- The AI generates a response with suggested changes
+- Changes are applied to your spreadsheet only after you approve them
+- No data is stored on our servers — we have no servers
+
+## Third-Party AI Services
+
+OpenSheets integrates with **Anthropic's Claude API** for AI processing. When you use OpenSheets:
+
+1. Your prompt and relevant spreadsheet context are sent to Anthropic's API
+2. You must provide your own Anthropic API key
+3. Anthropic processes the request and returns a response
+
+**Important:** Anthropic does NOT use API data to train their AI models. See [Anthropic's Privacy Policy](https://www.anthropic.com/privacy) and [API Terms](https://www.anthropic.com/api-terms).
+
+We do not integrate with OpenAI or any other AI provider that may use customer data for model training.
+
+## Data Storage & Protection
+
+**We do not store your data.** OpenSheets has no backend servers or databases.
+
+- Your API keys are stored locally in your browser or Google Apps Script properties
+- Conversation history exists only in your browser session
+- Spreadsheet data remains in your Google Sheets™ document
+- All communication with Anthropic's API uses HTTPS encryption
+
+Since we don't collect or store data, there is no data to protect on our end. Your data protection is handled by:
+- Google (for your spreadsheet data)
+- Anthropic (for API communications)
+- Your browser (for local storage)
+
+## Data Retention & Deletion
+
+**We retain no user data.** Since OpenSheets doesn't collect or store any data on external servers, there is nothing to retain or delete.
+
+- **Spreadsheet data**: Controlled entirely by you within Google Sheets™
+- **API keys**: Stored locally; delete by clearing browser storage or removing the add-on
+- **Conversation history**: Session-based; cleared when you close the sidebar or refresh
+
+**To remove all local data:**
+1. Uninstall the OpenSheets add-on from Google Sheets™
+2. Clear your browser's local storage for opensheets.app
+
+If you have any questions about data deletion, contact us and we'll assist you.
 
 ## Open Source
 
@@ -27,11 +76,14 @@ OpenSheets is open source software licensed under the MIT License. You can revie
 
 **GitHub:** [github.com/martinsione/opensheets](https://github.com/martinsione/opensheets)
 
+## Changes to This Policy
+
+We may update this privacy policy from time to time. We will notify users of any material changes by updating the "Last updated" date at the top of this page.
+
 ## Contact
 
-Questions? Open an issue on [GitHub](https://github.com/martinsione/opensheets/issues) or reach out on X: [@sionemart](https://x.com/sionemart)
+Questions about this privacy policy? Open an issue on [GitHub](https://github.com/martinsione/opensheets/issues) or reach out on X: [@sionemart](https://x.com/sionemart)
 
 ---
 
 *Google Sheets™ is a trademark of Google LLC. OpenSheets is not affiliated with or endorsed by Google.*
-
